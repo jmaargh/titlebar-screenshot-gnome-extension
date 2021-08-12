@@ -30,13 +30,53 @@ const extension = ExtensionUtils.getCurrentExtension();
 const iconName = "org.gnome.Screenshot";
 const errorIconName = "error";
 
+const Action = {
+    COPY: 0,
+    FILE: 1,
+    INTERACTIVE: 2,
+};
+
 class CustomWindowMenu extends imports.ui.windowMenu.WindowMenu {
     constructor(...args) {
         super(...args);
-        this.addScreenshotAction();
+
+        let itemPosition = Math.min(Math.max(settings.menuPosition, 0), this.numMenuItems);
+
+        // First separator (if required)
+        if (settings.useSeparators) {
+            if (itemPosition > 0) { // Not required for first position
+                if (!(this._getMenuItems()[itemPosition - 1] instanceof PopupMenu.PopupSeparatorMenuItem)) { // Not required if separator exists here
+                    this.addMenuItem(new PopupMenu.PopupSeparatorMenuItem, itemPosition);
+                    itemPosition += 1;
+                }
+            }
+        }
+
+        for (const action of settings.actions) {
+            switch (action) {
+                case Action.COPY:
+                    this.addCopyScreenshotAction(itemPosition);
+                    itemPosition += 1;
+                    break;
+                case Action.FILE:
+                    this.addFileScreenshotAction(itemPosition);
+                    itemPosition += 1;
+                    break;
+            }
+        }
+
+        // Second separator (if required)
+        if (settings.useSeparators) {
+            if (itemPosition > 0 && itemPosition < this.numMenuItems - 1) { // Not required for first or last position
+                if (!(this._getMenuItems[itemPosition + 1] instanceof PopupMenu.PopupSeparatorMenuItem)) { // Not required if separator exists here
+                    this.addMenuItem(new PopupMenu.PopupSeparatorMenuItem, itemPosition);
+                    itemPosition += 1;
+                }
+            }
+        }
     }
 
-    addScreenshotAction() {
+    addCopyScreenshotAction(position) {
         const callback = () => {
             // TODO: other options
             let process = Gio.Subprocess.new(["gnome-screenshot", "-w", "-c"], Gio.SubprocessFlags.STDERR_PIPE);
@@ -60,9 +100,34 @@ class CustomWindowMenu extends imports.ui.windowMenu.WindowMenu {
 
         // TODO: other labels
         const item = this.addAction("Copy screenshot", callback, state.gicon);
-        this.moveMenuItem(item, this.numMenuItems - 2);
-        const separator = new PopupMenu.PopupSeparatorMenuItem();
-        this.addMenuItem(separator, this.numMenuItems - 1);
+        this.moveMenuItem(item, position);
+    }
+
+    addFileScreenshotAction(position) {
+        const callback = () => {
+            // TODO: other options
+            let process = Gio.Subprocess.new(["gnome-screenshot", "-w", "-c"], Gio.SubprocessFlags.STDERR_PIPE);
+            process.wait_async(null, (process, result) => {
+                try {
+                    process.wait_finish(result);
+
+                    if (process.get_successful()) {
+                        notify("Screenshot captured", "Image copied to clipboard");
+                    } else {
+                        let error_message = errorFromSubprocess(process);
+                        error_message.push(`STATUS: ${process.get_exit_status()}`);
+
+                        notify("Screenshot failed", error_message.join('\n'));
+                    }
+                } catch (error) {
+                    logError(error);
+                }
+            });
+        };
+
+        // TODO: other labels
+        const item = this.addAction("Screenshot to file", callback, state.gicon);
+        this.moveMenuItem(item, position);
     }
 }
 
@@ -107,7 +172,16 @@ let state = {
     gicon: null,
     errorGIcon: null,
 };
-let settings = {};
+let settings = {
+    actions: [
+        Action.COPY,
+        Action.FILE,
+        Action.INTERACTIVE,
+    ],
+    menuPosition: 10,
+    useSeparators: true,
+    iconInMenu: true,
+};
 
 function init() {
     state.gicon = Gio.ThemedIcon.new(iconName);
