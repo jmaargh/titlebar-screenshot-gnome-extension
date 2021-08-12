@@ -4,5 +4,7 @@
   "uuid": "titlebar-screenshot@jmaargh.github.com",
   "shell-version": [
     "3.38"
-  ]
+  ],
+  "settings-schema": "org.gnome.shell.extensions.titlebar-screenshot",
+  "version": "1"
 }

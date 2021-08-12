@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.gnome.shell.extensions.titlebar-screenshot" path="/org/gnome/shell/extensions/titlebar-screenshot/">
+    <key name="copy-action" type="u">
+      <default>1</default>
+      <summary>Whether and where to show the copy screenshot action. 0 will disable this action, positive numbers indicate the order they are shown in (lower numbers appear first).</summary>
+    </key>
+    <key name="file-action" type="u">
+      <default>2</default>
+      <summary>Whether and where to show the screenshot-to-file action. 0 will disable this action, positive numbers indicate the order they are shown in (lower numbers appear first).</summary>
+    </key>
+    <key name="tool-action" type="u">
+      <default>0</default>
+      <summary>Whether and where to show the screenshot tool action. 0 will disable this action, positive numbers indicate the order they are shown in (lower numbers appear first).</summary>
+    </key>
+    <key name="menu-position" type="u">
+      <default>8</default>
+      <summary>Position to show actions in the context menu. This is the number of items (including separators) which will appear before screenshot actions.</summary>
+    </key>
+    <key name="use-separators" type="b">
+      <default>true</default>
+      <summary>Use separators in the context menu around screenshot actions.</summary>
+    </key>
+    <key name="icon-in-menu" type="b">
+      <default>true</default>
+      <summary>Show icon next to menu items.</summary>
+    </key>
+  </schema>
+</schemalist>

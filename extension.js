@@ -33,8 +33,17 @@ const errorIconName = "error";
 const Action = {
     COPY: 0,
     FILE: 1,
-    INTERACTIVE: 2,
+    TOOL: 2,
 };
+
+const Key = {
+    COPY_ACTION: "copy-action",
+    FILE_ACTION: "file-action",
+    TOOL_ACTION: "tool-action",
+    MENU_POSITION: "menu-position",
+    USE_SEPARATORS: "use-separators",
+    ICON_IN_MENU: "icon-in-menu",
+}
 
 class CustomWindowMenu extends imports.ui.windowMenu.WindowMenu {
     constructor(...args) {
@@ -60,8 +69,8 @@ class CustomWindowMenu extends imports.ui.windowMenu.WindowMenu {
                 case Action.FILE:
                     this.addFileScreenshotAction(itemPosition);
                     break;
-                case Action.INTERACTIVE:
-                    this.addInteractiveScreenshotAction(itemPosition);
+                case Action.TOOL:
+                    this.addToolScreenshotAction(itemPosition);
                     break;
                 default:
                     continue;
@@ -129,7 +138,7 @@ class CustomWindowMenu extends imports.ui.windowMenu.WindowMenu {
         this.addScreenshotAction(position, "Screenshot to file", callback);
     }
 
-    addInteractiveScreenshotAction(position) {
+    addToolScreenshotAction(position) {
         this.addScreenshotAction(position, "Screenshot tool", () => {
             Gio.Subprocess.new(["gnome-screenshot", "-w", "-i"], Gio.SubprocessFlags.NONE);
         });
@@ -184,36 +193,97 @@ function errorFromSubprocess(subprocess) {
     return message;
 }
 
+function pathToUri(path) {
+    if (path === null || !(path.trim())) {
+        path = GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_PICTURES);
+    }
+
+    Gio.File.new_for_path(path).get_uri()
+}
+
 let state = {
     originalWindowMenu: null,
     gicon: null,
     errorGIcon: null,
 };
 let settings = {
-    actions: [
-        Action.COPY,
-        Action.FILE,
-        Action.INTERACTIVE,
-    ],
-    menuPosition: 10,
+    actions: [],
+    menuPosition: 0,
     useSeparators: true,
     iconInMenu: true,
     screenshotDirUri: null,
 };
+let gsettings = null;
+let gsettings_callback = null;
+let gsettings_gs = null;
+let gsettings_gs_callback = null;
 
-function loadAndConnectSettings() {
-    // TODO: pull from org.gnome.gnome-screenshot.auto-save-directory
-    const directory = GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_PICTURES);
-    settings.screenshotDirUri = Gio.File.new_for_path(directory).get_uri();
+function updateActionSettings(gsettings) {
+    let actions = [];
+
+    let copy_val = gsettings.get_uint(Key.COPY_ACTION);
+    if (copy_val > 0) {
+        actions.push([Action.COPY, copy_val]);
+    }
+    let file_val = gsettings.get_uint(Key.FILE_ACTION);
+    if (file_val > 0) {
+        actions.push([Action.FILE, file_val]);
+    }
+    let tool_val = gsettings.get_uint(Key.TOOL_ACTION);
+    if (tool_val > 0) {
+        actions.push([Action.TOOL, tool_val]);
+    }
+
+    log(actions);
+
+    settings.actions = actions.sort((a, b) => a[1] - b[1]).map((pair) => pair[0]);
+    log(settings.actions);
+}
+
+function updateSettings(gsettings, key) {
+    if (key === null || key === Key.COPY_ACTION || key === Key.FILE_ACTION || key === Key.TOOL_ACTION) {
+        updateActionSettings(gsettings);
+    }
+    if (key === null || key === Key.MENU_POSITION) {
+        settings.menuPosition = gsettings.get_uint(Key.MENU_POSITION);
+    }
+    if (key === null || key === Key.USE_SEPARATORS) {
+        settings.useSeparators = gsettings.get_boolean(Key.USE_SEPARATORS);
+    }
+    if (key === null || key === Key.ICON_IN_MENU) {
+        settings.iconInMenu = gsettings.get_boolean(Key.ICON_IN_MENU);
+    }
+}
+
+function updateGsSettings(gsettings, key) {
+    const KEY = "auto-save-directory";
+    if (key === KEY || key === null) {
+        settings.screenshotDirUri = pathToUri(gsettings.get_string(KEY));
+    }
+}
+
+function initSettings() {
+    gsettings = ExtensionUtils.getSettings();
+    updateSettings(gsettings, null);
+    gsettings_callback = gsettings.connect("changed", updateSettings);
+
+    gsettings_gs = ExtensionUtils.getSettings('org.gnome.gnome-screenshot');
+    updateGsSettings(gsettings_gs, null);
+    gsettings_gs_callback = gsettings_gs.connect("changed", updateGsSettings);
+}
+
+function initState() {
+    state.gicon = Gio.ThemedIcon.new(iconName);
+    state.errorGIcon = Gio.ThemedIcon.new(errorIconName);
 }
 
 function init() {
-    state.gicon = Gio.ThemedIcon.new(iconName);
-    state.errorGIcon = Gio.ThemedIcon.new(errorIconName);
-    loadAndConnectSettings();
+    initState();
 }
 
 function enable() {
+    initSettings();
+
     state.originalWindowMenu = imports.ui.windowMenu.WindowMenu;
     imports.ui.windowMenu.WindowMenu = CustomWindowMenu;
 }
@@ -223,5 +293,25 @@ function disable() {
     if (state.originalWindowMenu !== null) {
         imports.ui.windowMenu.WindowMenu = this.originalWindowMenu;
         state.originalWindowMenu = null;
+    }
+
+    if (gsettings_gs_callback !== null) {
+        gsettings_gs.disconnect(gsettings_gs_callback);
+        gsettings_gs_callback = null;
+    }
+    if (gsettings_gs !== null) {
+        gsettings_gs = null;
+    }
+
+    if (gsettings_callback !== null) {
+        gsettings.disconnect(gsettings_callback);
+        gsettings_callback = null;
+    }
+    if (gsettings !== null) {
+        gsettings = null;
+    }
+
+    for (const key in settings) {
+        settings[key] = null;
     }
 }
