@@ -234,10 +234,7 @@ function updateActionSettings(gsettings) {
         actions.push([Action.TOOL, tool_val]);
     }
 
-    log(actions);
-
     settings.actions = actions.sort((a, b) => a[1] - b[1]).map((pair) => pair[0]);
-    log(settings.actions);
 }
 
 function updateSettings(gsettings, key) {
