@@ -145,7 +145,7 @@ class CustomWindowMenu extends imports.ui.windowMenu.WindowMenu {
     }
 
     addScreenshotAction(position, label, callback) {
-        const icon = settings.iconInMenu ? state.gicon : undefined;
+        const icon = settings.iconInMenu ? res.gicon : undefined;
         const item = this.addAction(label, callback, icon);
         this.moveMenuItem(item, position);
     }
@@ -156,11 +156,11 @@ function notify(title, message, directory_action, is_error = false) {
     imports.ui.main.messageTray.add(source);
 
     let params = {
-        gicon: state.gicon,
+        gicon: res.gicon,
         secondaryGIcon: null,
     };
     if (is_error) {
-        params.secondaryGIcon = state.errorGIcon;
+        params.secondaryGIcon = res.errorGIcon;
     }
 
     let notification = new MessageTray.Notification(source, title, message, params);
@@ -201,11 +201,16 @@ function pathToUri(path) {
     Gio.File.new_for_path(path).get_uri()
 }
 
-let state = {
-    originalWindowMenu: null,
+// Set on init, never unset
+let res = {
     gicon: null,
     errorGIcon: null,
 };
+// Set and unset on enable/disable
+let state = {
+    originalWindowMenu: null,
+};
+// Dynamic settings
 let settings = {
     actions: [],
     menuPosition: 0,
@@ -269,13 +274,9 @@ function initSettings() {
     gsettings_gs_callback = gsettings_gs.connect("changed", updateGsSettings);
 }
 
-function initState() {
-    state.gicon = Gio.ThemedIcon.new(iconName);
-    state.errorGIcon = Gio.ThemedIcon.new(errorIconName);
-}
-
 function init() {
-    initState();
+    res.gicon = Gio.ThemedIcon.new(iconName);
+    res.errorGIcon = Gio.ThemedIcon.new(errorIconName);
 }
 
 function enable() {
@@ -288,7 +289,7 @@ function enable() {
 
 function disable() {
     if (state.originalWindowMenu !== null) {
-        imports.ui.windowMenu.WindowMenu = this.originalWindowMenu;
+        imports.ui.windowMenu.WindowMenu = state.originalWindowMenu;
         state.originalWindowMenu = null;
     }
 
