@@ -56,13 +56,18 @@ class CustomWindowMenu extends imports.ui.windowMenu.WindowMenu {
             switch (action) {
                 case Action.COPY:
                     this.addCopyScreenshotAction(itemPosition);
-                    itemPosition += 1;
                     break;
                 case Action.FILE:
                     this.addFileScreenshotAction(itemPosition);
-                    itemPosition += 1;
                     break;
+                case Action.INTERACTIVE:
+                    this.addInteractiveScreenshotAction(itemPosition);
+                    break;
+                default:
+                    continue;
             }
+            itemPosition += 1;
+
         }
 
         // Second separator (if required)
@@ -97,8 +102,7 @@ class CustomWindowMenu extends imports.ui.windowMenu.WindowMenu {
             });
         };
 
-        const item = this.addAction("Copy screenshot", callback, state.gicon);
-        this.moveMenuItem(item, position);
+        this.addScreenshotAction(position, "Copy screenshot", callback);
     }
 
     addFileScreenshotAction(position) {
@@ -122,12 +126,17 @@ class CustomWindowMenu extends imports.ui.windowMenu.WindowMenu {
             });
         };
 
-        const item = this.addAction("Screenshot to file", callback, state.gicon);
-        this.moveMenuItem(item, position);
+        this.addScreenshotAction(position, "Screenshot to file", callback);
+    }
+
+    addInteractiveScreenshotAction(position) {
+        this.addScreenshotAction(position, "Screenshot tool", () => {
+            Gio.Subprocess.new(["gnome-screenshot", "-w", "-i"], Gio.SubprocessFlags.NONE);
+        });
     }
 
     addScreenshotAction(position, label, callback) {
-        icon = settings.iconInMenu ? state.gicon : undefined;
+        const icon = settings.iconInMenu ? state.gicon : undefined;
         const item = this.addAction(label, callback, icon);
         this.moveMenuItem(item, position);
     }
