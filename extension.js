@@ -20,7 +20,7 @@
 
 'use strict';
 
-const Gio = imports.gi.Gio;
+const { GLib, Gio } = imports.gi;
 const PopupMenu = imports.ui.popupMenu;
 const MessageTray = imports.ui.messageTray;
 const ExtensionUtils = imports.misc.extensionUtils;
@@ -78,19 +78,18 @@ class CustomWindowMenu extends imports.ui.windowMenu.WindowMenu {
 
     addCopyScreenshotAction(position) {
         const callback = () => {
-            // TODO: other options
             let process = Gio.Subprocess.new(["gnome-screenshot", "-w", "-c"], Gio.SubprocessFlags.STDERR_PIPE);
             process.wait_async(null, (process, result) => {
                 try {
                     process.wait_finish(result);
 
                     if (process.get_successful()) {
-                        notify("Screenshot captured", "Image copied to clipboard");
+                        notify("Screenshot captured", "Image copied to clipboard", false);
                     } else {
                         let error_message = errorFromSubprocess(process);
                         error_message.push(`STATUS: ${process.get_exit_status()}`);
 
-                        notify("Screenshot failed", error_message.join('\n'));
+                        notify("Screenshot failed", error_message.join('\n'), false, true);
                     }
                 } catch (error) {
                     logError(error);
@@ -98,26 +97,24 @@ class CustomWindowMenu extends imports.ui.windowMenu.WindowMenu {
             });
         };
 
-        // TODO: other labels
         const item = this.addAction("Copy screenshot", callback, state.gicon);
         this.moveMenuItem(item, position);
     }
 
     addFileScreenshotAction(position) {
         const callback = () => {
-            // TODO: other options
-            let process = Gio.Subprocess.new(["gnome-screenshot", "-w", "-c"], Gio.SubprocessFlags.STDERR_PIPE);
+            let process = Gio.Subprocess.new(["gnome-screenshot", "-w"], Gio.SubprocessFlags.STDERR_PIPE);
             process.wait_async(null, (process, result) => {
                 try {
                     process.wait_finish(result);
 
                     if (process.get_successful()) {
-                        notify("Screenshot captured", "Image copied to clipboard");
+                        notify("Screenshot captured", "Click to open containing directory", true);
                     } else {
                         let error_message = errorFromSubprocess(process);
                         error_message.push(`STATUS: ${process.get_exit_status()}`);
 
-                        notify("Screenshot failed", error_message.join('\n'));
+                        notify("Screenshot failed", error_message.join('\n'), false, true);
                     }
                 } catch (error) {
                     logError(error);
@@ -125,13 +122,18 @@ class CustomWindowMenu extends imports.ui.windowMenu.WindowMenu {
             });
         };
 
-        // TODO: other labels
         const item = this.addAction("Screenshot to file", callback, state.gicon);
+        this.moveMenuItem(item, position);
+    }
+
+    addScreenshotAction(position, label, callback) {
+        icon = settings.iconInMenu ? state.gicon : undefined;
+        const item = this.addAction(label, callback, icon);
         this.moveMenuItem(item, position);
     }
 }
 
-function notify(title, message, is_error = false) {
+function notify(title, message, directory_action, is_error = false) {
     let source = new MessageTray.SystemNotificationSource();
     imports.ui.main.messageTray.add(source);
 
@@ -145,6 +147,12 @@ function notify(title, message, is_error = false) {
 
     let notification = new MessageTray.Notification(source, title, message, params);
     notification.setTransient(true);
+    if (directory_action) {
+        notification.addAction("Open containing directory", () => {
+            Gio.AppInfo.launch_default_for_uri(settings.screenshotDirUri, null);
+        });
+    }
+
     source.showNotification(notification);
 }
 
@@ -181,11 +189,19 @@ let settings = {
     menuPosition: 10,
     useSeparators: true,
     iconInMenu: true,
+    screenshotDirUri: null,
 };
+
+function loadAndConnectSettings() {
+    // TODO: pull from org.gnome.gnome-screenshot.auto-save-directory
+    const directory = GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_PICTURES);
+    settings.screenshotDirUri = Gio.File.new_for_path(directory).get_uri();
+}
 
 function init() {
     state.gicon = Gio.ThemedIcon.new(iconName);
     state.errorGIcon = Gio.ThemedIcon.new(errorIconName);
+    loadAndConnectSettings();
 }
 
 function enable() {
