@@ -1,0 +1,8 @@
+{
+  "name": "Titlebar Screenshot",
+  "description": "Description",
+  "uuid": "titlebar-screenshot@jmaargh.github.com",
+  "shell-version": [
+    "3.38"
+  ]
+}
