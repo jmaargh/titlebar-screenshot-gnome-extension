@@ -49,6 +49,7 @@ const SettingsWidget = GObject.registerClass({
     makeConfigurationOptions() {
       const box = Gtk.ListBox.new(Gtk.Orientation.VERTICAL, 0);
       box.set_valign(Gtk.Align.START);
+      box.set_selection_mode(Gtk.SelectionMode.NONE);
 
       const positionRow = this.makeConfigurationRow(
         "Position in menu",
