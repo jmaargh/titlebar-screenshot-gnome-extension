@@ -1,6 +1,10 @@
 
 
 const { Gtk, GObject, Handy } = imports.gi;
+const Lang = imports.lang;
+const ExtensionUtils = imports.misc.extensionUtils;
+const extension = ExtensionUtils.getCurrentExtension();
+const { Key } = extension.imports.vars;
 
 const SettingsWidget = GObject.registerClass({
   GTypeName: "TitlebarScreenshotSettingsWidget",
@@ -14,12 +18,18 @@ const SettingsWidget = GObject.registerClass({
       this.fill = true;
       this.set_orientation(Gtk.Orientation.HORIZONTAL);
 
+      this.gsettings = ExtensionUtils.getSettings();
+
       this.firstSeparator = this.makeMenuSeparator();
       this.copyMenuItem = this.makeMenuButton("Copy screenshot");
       this.fileMenuItem = this.makeMenuButton("Screenshot to file");
       this.toolMenuItem = this.makeMenuButton("Screenshot tool");
       this.secondSeparator = this.makeMenuSeparator();
       this.menuItemsBox = Gtk.Box.new(Gtk.Orientation.VERTICAL, 0);
+
+      this.positionSpinner = null;
+      this.separatorsSwitch = null;
+      this.iconsSwitch = null;
 
       const configuration = this.makeConfigurationBox();
       this.add(configuration);
@@ -55,30 +65,41 @@ const SettingsWidget = GObject.registerClass({
         "Position in menu",
         "Number of items before screenshot actions\n(including separators)"
       );
-      const positionSpinner = Gtk.SpinButton.new_with_range(0, 1024, 1);
-      positionSpinner.set_valign(Gtk.Align.CENTER);
-      positionSpinner.set_halign(Gtk.Align.CEEND);
-      positionRow.add(positionSpinner);
+      this.positionSpinner = new Gtk.SpinButton();
+      this.positionSpinner.set_valign(Gtk.Align.CENTER);
+      this.positionSpinner.set_halign(Gtk.Align.CEEND);
+      this.positionSpinner.set_range(0, 1024);
+      this.positionSpinner.set_increments(1, 1);
+      this.positionSpinner.connect("value-changed", Lang.bind(this, (spinner) => {
+        this.gsettings.set_uint(Key.MENU_POSITION, spinner.get_value_as_int());
+      }));
+      positionRow.add(this.positionSpinner);
       box.add(positionRow);
 
       const separatorsRow = this.makeConfigurationRow(
         "Add separators",
         "Insert separators around screenshot actions in menu",
       );
-      const separatorsSwitch = Gtk.Switch.new();
-      separatorsSwitch.set_valign(Gtk.Align.CENTER);
-      separatorsSwitch.set_halign(Gtk.Align.END);
-      separatorsRow.add(separatorsSwitch);
+      this.separatorsSwitch = Gtk.Switch.new();
+      this.separatorsSwitch.set_valign(Gtk.Align.CENTER);
+      this.separatorsSwitch.set_halign(Gtk.Align.END);
+      this.separatorsSwitch.connect("notify::active", Lang.bind(this, (widget) => {
+        this.gsettings.set_boolean(Key.USE_SEPARATORS, widget.active);
+      }));
+      separatorsRow.add(this.separatorsSwitch);
       box.add(separatorsRow);
 
       const iconsRow = this.makeConfigurationRow(
         "Show icons",
         "Add icon next to all screenshot actions",
       );
-      const iconsSwitch = Gtk.Switch.new();
-      iconsSwitch.set_valign(Gtk.Align.CENTER);
-      iconsSwitch.set_halign(Gtk.Align.END);
-      iconsRow.add(iconsSwitch);
+      this.iconsSwitch = Gtk.Switch.new();
+      this.iconsSwitch.set_valign(Gtk.Align.CENTER);
+      this.iconsSwitch.set_halign(Gtk.Align.END);
+      this.iconsSwitch.connect("notify::active", Lang.bind(this, (widget) => {
+        this.gsettings.set_boolean(Key.ICON_IN_MENU, widget.active);
+      }));
+      iconsRow.add(this.iconsSwitch);
       box.add(iconsRow);
 
       return box;
