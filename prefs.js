@@ -36,6 +36,8 @@ const SettingsWidget = GObject.registerClass({
 
       const menuItems = this.makeMenuItems();
       this.add(menuItems);
+
+      this.conncetSettingsChanged();
     }
 
     makeConfigurationBox() {
@@ -159,6 +161,23 @@ const SettingsWidget = GObject.registerClass({
       button.set_alignment(0.0, 0.5);
 
       return button;
+    }
+
+    conncetSettingsChanged() {
+      this.gsettings.connect("changed", (gsettings, key) => this.onSettingsChanged(gsettings, key));
+      this.onSettingsChanged(this.gsettings, null);
+    }
+
+    onSettingsChanged(gsettings, key) {
+      if (key === null || key === Key.MENU_POSITION) {
+        this.positionSpinner.set_value(gsettings.get_uint(Key.MENU_POSITION));
+      }
+      if (key === null || key === Key.USE_SEPARATORS) {
+        this.separatorsSwitch.set_active(gsettings.get_boolean(Key.USE_SEPARATORS));
+      }
+      if (key === null || key === Key.ICON_IN_MENU) {
+        this.iconsSwitch.set_active(gsettings.get_boolean(Key.ICON_IN_MENU));
+      }
     }
   }
 );
