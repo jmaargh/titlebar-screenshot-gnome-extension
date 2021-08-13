@@ -26,24 +26,7 @@ const MessageTray = imports.ui.messageTray;
 const ExtensionUtils = imports.misc.extensionUtils;
 
 const extension = ExtensionUtils.getCurrentExtension();
-
-const iconName = "org.gnome.Screenshot";
-const errorIconName = "error";
-
-const Action = {
-    COPY: 0,
-    FILE: 1,
-    TOOL: 2,
-};
-
-const Key = {
-    COPY_ACTION: "copy-action",
-    FILE_ACTION: "file-action",
-    TOOL_ACTION: "tool-action",
-    MENU_POSITION: "menu-position",
-    USE_SEPARATORS: "use-separators",
-    ICON_IN_MENU: "icon-in-menu",
-}
+const { iconName, errorIconName, Action, Key } = extension.imports.vars;
 
 class CustomWindowMenu extends imports.ui.windowMenu.WindowMenu {
     constructor(...args) {
