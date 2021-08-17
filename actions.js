@@ -44,3 +44,34 @@ function toKey(action) {
     return Key.TOOL_ACTION;
   }
 }
+
+function getActionText(gsettings, action) {
+  let key;
+  if (action === Action.COPY) {
+    key = Key.COPY_TEXT;
+  }
+  if (action === Action.FILE) {
+    key = Key.FILE_TEXT;
+  }
+  if (action === Action.TOOL) {
+    key = Key.TOOL_TEXT;
+  }
+
+  return gsettings.get_string(key);
+}
+
+function getDefaultText(action) {
+  let text = "unknown";
+  switch (action) {
+    case Action.COPY:
+      text = "Copy screenshot";
+      break;
+    case Action.FILE:
+      text = "Screenshot to file";
+      break;
+    case Action.TOOL:
+      text = "Screenshot tool";
+      break;
+  }
+  return text;
+}

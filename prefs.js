@@ -5,7 +5,9 @@ const Lang = imports.lang;
 const ExtensionUtils = imports.misc.extensionUtils;
 const extension = ExtensionUtils.getCurrentExtension();
 const { Key, iconName } = extension.imports.vars;
-const { Action, getCurrentActions, saveActions, toKey } = extension.imports.actions;
+const {
+  Action, getCurrentActions, saveActions, toKey, getDefaultText, getActionText
+} = extension.imports.actions;
 
 const SettingsWidget = GObject.registerClass(
   class TitlebarScreenshotSettingsWidget extends Gtk.Box {
@@ -229,6 +231,7 @@ const MenuItems = GObject.registerClass(
     update(gsettings) {
       this.clear();
       this.updateIcons(gsettings.get_boolean(Key.ICON_IN_MENU));
+      this.updateLabels(gsettings);
 
       const actions = getCurrentActions(gsettings);
       const hasAnyActions = actions.length !== 0;
@@ -262,23 +265,15 @@ const MenuItems = GObject.registerClass(
       }
     }
 
-    _makeButton(action) {
-      // TODO: move label to utility function
-      let label = "unknown";
-      switch (action) {
-        case Action.COPY:
-          label = "Copy screenshot";
-          break;
-        case Action.FILE:
-          label = "Screenshot to file";
-          break;
-        case Action.TOOL:
-          label = "Screenshot tool";
-          break;
+    updateLabels(gsettings) {
+      for (const [action, button] of this._buttons) {
+        button.set_label(getActionText(gsettings, action));
       }
+    }
 
+    _makeButton(action) {
       const button = Gtk.Button.new();
-      button.set_label(label);
+      button.set_label("");
       button.set_relief(Gtk.ReliefStyle.NONE);
       button.set_alignment(0.0, 0.5);
 
@@ -357,22 +352,8 @@ const AddPopover = GObject.registerClass(
     }
 
     _makeButton(action) {
-      // TODO: move label to utility function
-      let label = "unknown";
-      switch (action) {
-        case Action.COPY:
-          label = "Copy screenshot";
-          break;
-        case Action.FILE:
-          label = "Screenshot to file";
-          break;
-        case Action.TOOL:
-          label = "Screenshot tool";
-          break;
-      }
-
       const button = Gtk.Button.new();
-      button.set_label(label);
+      button.set_label(getDefaultText(action));
       button.set_alignment(0.0, 0.5);
 
       button.connect("clicked", (_button) => {
@@ -489,22 +470,8 @@ const EditPopover = GObject.registerClass(
     }
 
     _makeButton(action) {
-      // TODO: move label to utility function
-      let label = "unknown";
-      switch (action) {
-        case Action.COPY:
-          label = "Copy screenshot";
-          break;
-        case Action.FILE:
-          label = "Screenshot to file";
-          break;
-        case Action.TOOL:
-          label = "Screenshot tool";
-          break;
-      }
-
       const button = Gtk.Button.new();
-      button.set_label(label);
+      button.set_label(getDefaultText(action));
       button.set_alignment(0.0, 0.5);
 
       button.connect("clicked", (_button) => {

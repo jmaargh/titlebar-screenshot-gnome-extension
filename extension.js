@@ -95,7 +95,7 @@ class CustomWindowMenu extends imports.ui.windowMenu.WindowMenu {
             });
         };
 
-        this.addScreenshotAction(position, "Copy screenshot", callback);
+        this.addScreenshotAction(position, settings.copyActionText, callback);
     }
 
     addFileScreenshotAction(position) {
@@ -119,11 +119,11 @@ class CustomWindowMenu extends imports.ui.windowMenu.WindowMenu {
             });
         };
 
-        this.addScreenshotAction(position, "Screenshot to file", callback);
+        this.addScreenshotAction(position, settings.fileActionText, callback);
     }
 
     addToolScreenshotAction(position) {
-        this.addScreenshotAction(position, "Screenshot tool", () => {
+        this.addScreenshotAction(position, settings.toolActionText, () => {
             Gio.Subprocess.new(["gnome-screenshot", "-w", "-i"], Gio.SubprocessFlags.NONE);
         });
     }
@@ -197,6 +197,9 @@ let state = {
 // Dynamic settings
 let settings = {
     actions: [],
+    copyActionText: "",
+    fileActionText: "",
+    toolActionText: "",
     menuPosition: 0,
     useSeparators: true,
     iconInMenu: true,
@@ -219,6 +222,15 @@ function updateSettings(gsettings, key) {
     }
     if (key === null || key === Key.ICON_IN_MENU) {
         settings.iconInMenu = gsettings.get_boolean(Key.ICON_IN_MENU);
+    }
+    if (key === null || key === Key.COPY_TEXT) {
+        settings.copyActionText = gsettings.get_string(Key.COPY_TEXT);
+    }
+    if (key === null || key === Key.FILE_TEXT) {
+        settings.fileActionText = gsettings.get_string(Key.FILE_TEXT);
+    }
+    if (key === null || key === Key.TOOL_TEXT) {
+        settings.toolActionText = gsettings.get_string(Key.TOOL_TEXT);
     }
 }
 
