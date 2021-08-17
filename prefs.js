@@ -4,7 +4,8 @@ const { Gtk, GObject, Handy } = imports.gi;
 const Lang = imports.lang;
 const ExtensionUtils = imports.misc.extensionUtils;
 const extension = ExtensionUtils.getCurrentExtension();
-const { Action, Key, iconName } = extension.imports.vars;
+const { Key, iconName } = extension.imports.vars;
+const { Action, getCurrentActions, saveActions } = extension.imports.actions;
 
 const SettingsWidget = GObject.registerClass({
   GTypeName: "TitlebarScreenshotSettingsWidget",
@@ -145,17 +146,17 @@ const SettingsWidget = GObject.registerClass({
 
     makeAddPopover(relativeWidget) {
       this.addPopover = new AddPopover(relativeWidget);
-      this.addPopover.setCallback(null); // TODO:
+      this.addPopover.setCallback(Lang.bind(this, (a) => this.onAddAction(a)));
       return this.addPopover;
     }
 
-    // onAddAction(action) {
-    //   addAction(this.gsettings, action);
-    //   this.populateMenuItems();
-    //   this.populateAddPopover();
-    //   this.populateActionPopovers();
-    //   this.addPopover.popdown();
-    // }
+    onAddAction(action) {
+      this.addPopover.popdown();
+
+      let actions = getCurrentActions(this.gsettings);
+      actions.push(action);
+      saveActions(this.gsettings, actions);
+    }
 
     connectSettingsChanged() {
       this.gsettings.connect("changed", (gsettings, key) => this.onSettingsChanged(gsettings, key));
@@ -216,26 +217,16 @@ const MenuItems = GObject.registerClass(
       this.clear();
       this.updateIcons(gsettings.get_boolean(Key.ICON_IN_MENU));
 
-      const actions = [
-        gsettings.get_uint(Key.COPY_ACTION),
-        gsettings.get_uint(Key.FILE_ACTION),
-        gsettings.get_uint(Key.TOOL_ACTION),
-      ];
-      const hasAnyActions = actions.some((v) => v > 0);
+      const actions = getCurrentActions(gsettings);
+      const hasAnyActions = actions.length !== 0;
       const useSeparators = gsettings.get_boolean(Key.USE_SEPARATORS);
 
       if (hasAnyActions) {
         if (useSeparators) {
           this.pack_start(this._firstSeparator, true, true, 6);
         }
-        if (actions[0] > 0) {
-          this.add(this._buttons.get(Action.COPY));
-        }
-        if (actions[1] > 0) {
-          this.add(this._buttons.get(Action.FILE));
-        }
-        if (actions[2] > 0) {
-          this.add(this._buttons.get(Action.TOOL));
+        for (const action of actions) {
+          this.add(this._buttons.get(action));
         }
         if (useSeparators) {
           this.pack_start(this._secondSeparator, true, true, 6);

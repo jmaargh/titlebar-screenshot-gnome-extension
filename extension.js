@@ -26,7 +26,8 @@ const MessageTray = imports.ui.messageTray;
 const ExtensionUtils = imports.misc.extensionUtils;
 
 const extension = ExtensionUtils.getCurrentExtension();
-const { iconName, errorIconName, Action, Key } = extension.imports.vars;
+const { iconName, errorIconName, Key } = extension.imports.vars;
+const { Action, getCurrentActions } = extension.imports.actions;
 
 class CustomWindowMenu extends imports.ui.windowMenu.WindowMenu {
     constructor(...args) {
@@ -206,28 +207,9 @@ let gsettings_callback = null;
 let gsettings_gs = null;
 let gsettings_gs_callback = null;
 
-function updateActionSettings(gsettings) {
-    let actions = [];
-
-    let copy_val = gsettings.get_uint(Key.COPY_ACTION);
-    if (copy_val > 0) {
-        actions.push([Action.COPY, copy_val]);
-    }
-    let file_val = gsettings.get_uint(Key.FILE_ACTION);
-    if (file_val > 0) {
-        actions.push([Action.FILE, file_val]);
-    }
-    let tool_val = gsettings.get_uint(Key.TOOL_ACTION);
-    if (tool_val > 0) {
-        actions.push([Action.TOOL, tool_val]);
-    }
-
-    settings.actions = actions.sort((a, b) => a[1] - b[1]).map((pair) => pair[0]);
-}
-
 function updateSettings(gsettings, key) {
     if (key === null || key === Key.COPY_ACTION || key === Key.FILE_ACTION || key === Key.TOOL_ACTION) {
-        updateActionSettings(gsettings);
+        settings.actions = getCurrentActions(gsettings);
     }
     if (key === null || key === Key.MENU_POSITION) {
         settings.menuPosition = gsettings.get_uint(Key.MENU_POSITION);
