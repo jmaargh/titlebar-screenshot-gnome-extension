@@ -10,4 +10,4 @@ var Key = {
   MENU_POSITION: "menu-position",
   USE_SEPARATORS: "use-separators",
   ICON_IN_MENU: "icon-in-menu",
-}
+};
