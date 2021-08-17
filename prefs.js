@@ -7,9 +7,7 @@ const extension = ExtensionUtils.getCurrentExtension();
 const { Key, iconName } = extension.imports.vars;
 const { Action, getCurrentActions, saveActions, toKey } = extension.imports.actions;
 
-const SettingsWidget = GObject.registerClass({
-  GTypeName: "TitlebarScreenshotSettingsWidget",
-},
+const SettingsWidget = GObject.registerClass(
   class TitlebarScreenshotSettingsWidget extends Gtk.Box {
     _init(...args) {
       super._init(...args);
