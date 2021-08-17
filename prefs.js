@@ -4,7 +4,7 @@ const { Gtk, GObject, Handy } = imports.gi;
 const Lang = imports.lang;
 const ExtensionUtils = imports.misc.extensionUtils;
 const extension = ExtensionUtils.getCurrentExtension();
-const { Key } = extension.imports.vars;
+const { Action, Key, iconName } = extension.imports.vars;
 
 const SettingsWidget = GObject.registerClass({
   GTypeName: "TitlebarScreenshotSettingsWidget",
@@ -20,24 +20,17 @@ const SettingsWidget = GObject.registerClass({
 
       this.gsettings = ExtensionUtils.getSettings();
 
-      this.firstSeparator = this.makeMenuSeparator();
-      this.copyMenuItem = this.makeMenuButton("Copy screenshot");
-      this.fileMenuItem = this.makeMenuButton("Screenshot to file");
-      this.toolMenuItem = this.makeMenuButton("Screenshot tool");
-      this.secondSeparator = this.makeMenuSeparator();
-      this.menuItemsBox = Gtk.Box.new(Gtk.Orientation.VERTICAL, 0);
-
       this.positionSpinner = null;
       this.separatorsSwitch = null;
       this.iconsSwitch = null;
+      this.addButton = null;
+      this.menuItems = null;
 
-      const configuration = this.makeConfigurationBox();
-      this.add(configuration);
+      this.add(this.makeConfigurationBox());
+      this.add(this.makeMenuItems());
 
-      const menuItems = this.makeMenuItems();
-      this.add(menuItems);
-
-      this.conncetSettingsChanged();
+      this.connectSettingsChanged();
+      this.onSettingsChanged(this.gsettings, null);
     }
 
     makeConfigurationBox() {
@@ -114,23 +107,29 @@ const SettingsWidget = GObject.registerClass({
       frame.set_label_widget(label);
       frame.set_label_align(0.5, 0.5);
       frame.set_valign(Gtk.Align.START);
-      frame.set_halign(Gtk.Align.END);
+      frame.set_halign(Gtk.Align.START);
 
-      this.menuItemsBox.margin = 6;
-      frame.add(this.menuItemsBox);
+      const menuItemsBox = Gtk.Box.new(Gtk.Orientation.VERTICAL, 0);
+      menuItemsBox.margin_top = 12;
+      menuItemsBox.margin_bottom = 24;
+      menuItemsBox.margin_start = 6;
+      menuItemsBox.margin_end = 6;
+      frame.add(menuItemsBox);
 
-      this.menuItemsBox.add(this.firstSeparator);
-      this.menuItemsBox.add(this.copyMenuItem);
-      this.menuItemsBox.add(this.secondSeparator);
+      this.menuItems = new MenuItems();
+      this.menuItems.setCallback(null); // TODO:
+      menuItemsBox.add(this.menuItems);
 
-      const addButton = Gtk.Button.new();
-      addButton.set_label("Add");
+      this.addButton = Gtk.MenuButton.new();
+      this.addButton.set_label("Add");
       const addImage = Gtk.Image.new_from_icon_name("gtk-add", Gtk.IconSize.MENU);
-      addButton.set_image(addImage);
-      addButton.always_show_image = true;
-      addButton.margin_top = 12;
-      addButton.set_alignment(0.0, 0.5);
-      this.menuItemsBox.add(addButton);
+      this.addButton.set_image(addImage);
+      this.addButton.always_show_image = true;
+      this.addButton.margin_top = 24;
+      this.addButton.set_alignment(0.0, 0.5);
+      this.addButton.set_popover(this.makeAddPopover(this.addButton));
+
+      menuItemsBox.add(this.addButton);
 
       return frame;
     }
@@ -144,26 +143,21 @@ const SettingsWidget = GObject.registerClass({
       return row;
     }
 
-    makeMenuSeparator() {
-      const separator = Gtk.Separator.new(Gtk.Orientation.HORIZONTAL);
-      separator.padding = 6;
-      return separator;
+    makeAddPopover(relativeWidget) {
+      this.addPopover = new AddPopover(relativeWidget);
+      this.addPopover.setCallback(null); // TODO:
+      return this.addPopover;
     }
 
-    makeMenuButton(text) {
-      const button = Gtk.Button.new();
-      button.set_label(text);
-      button.set_relief(Gtk.ReliefStyle.NONE);
+    // onAddAction(action) {
+    //   addAction(this.gsettings, action);
+    //   this.populateMenuItems();
+    //   this.populateAddPopover();
+    //   this.populateActionPopovers();
+    //   this.addPopover.popdown();
+    // }
 
-      const image = Gtk.Image.new_from_icon_name("org.gnome.Screenshot", Gtk.IconSize.MENU);
-      button.set_image(image);
-      button.always_show_image = true;
-      button.set_alignment(0.0, 0.5);
-
-      return button;
-    }
-
-    conncetSettingsChanged() {
+    connectSettingsChanged() {
       this.gsettings.connect("changed", (gsettings, key) => this.onSettingsChanged(gsettings, key));
       this.onSettingsChanged(this.gsettings, null);
     }
@@ -178,9 +172,226 @@ const SettingsWidget = GObject.registerClass({
       if (key === null || key === Key.ICON_IN_MENU) {
         this.iconsSwitch.set_active(gsettings.get_boolean(Key.ICON_IN_MENU));
       }
+
+      const hasAnyAddActions = this.addPopover.update(this.gsettings);
+      this.addButton.set_sensitive(hasAnyAddActions);
+
+      this.menuItems.update(this.gsettings);
     }
   }
 );
+
+const MenuItems = GObject.registerClass(
+  class TbsSettingsMenuItems extends Gtk.Box {
+    _init(...args) {
+      super._init(...args);
+
+      this.set_orientation(Gtk.Orientation.VERTICAL);
+      this.set_spacing(0);
+
+      this._firstSeparator = Gtk.Separator.new(Gtk.Orientation.HORIZONTAL);
+      this._secondSeparator = Gtk.Separator.new(Gtk.Orientation.HORIZONTAL);
+
+      this._buttons = new Map();
+      this._icons = new Map();
+      for (const key in Action) {
+        this._makeButton(Action[key]);
+      }
+
+      this._callback = null;
+    }
+
+    setCallback(callback) {
+      this._callback = callback;
+    }
+
+
+    clear() {
+      for (const widget of this.get_children()) {
+        this.remove(widget);
+      }
+    }
+
+    update(gsettings) {
+      this.clear();
+      this.updateIcons(gsettings.get_boolean(Key.ICON_IN_MENU));
+
+      const actions = [
+        gsettings.get_uint(Key.COPY_ACTION),
+        gsettings.get_uint(Key.FILE_ACTION),
+        gsettings.get_uint(Key.TOOL_ACTION),
+      ];
+      const hasAnyActions = actions.some((v) => v > 0);
+      const useSeparators = gsettings.get_boolean(Key.USE_SEPARATORS);
+
+      if (hasAnyActions) {
+        if (useSeparators) {
+          this.pack_start(this._firstSeparator, true, true, 6);
+        }
+        if (actions[0] > 0) {
+          this.add(this._buttons.get(Action.COPY));
+        }
+        if (actions[1] > 0) {
+          this.add(this._buttons.get(Action.FILE));
+        }
+        if (actions[2] > 0) {
+          this.add(this._buttons.get(Action.TOOL));
+        }
+        if (useSeparators) {
+          this.pack_start(this._secondSeparator, true, true, 6);
+        }
+      }
+
+      this.show_all();
+    }
+
+    updateIcons(useIcons) {
+      if (useIcons) {
+        for (const [action, button] of this._buttons) {
+          button.set_image(this._icons.get(action));
+          button.always_show_image = true;
+        }
+      } else {
+        for (const [_, button] of this._buttons) {
+          button.set_image(null);
+        }
+      }
+    }
+
+    _makeButton(action) {
+      // TODO: move label to utility function
+      let label = "unknown";
+      switch (action) {
+        case Action.COPY:
+          label = "Copy screenshot";
+          break;
+        case Action.FILE:
+          label = "Screenshot to file";
+          break;
+        case Action.TOOL:
+          label = "Screenshot tool";
+          break;
+      }
+
+      const button = Gtk.Button.new();
+      button.set_label(label);
+      button.set_relief(Gtk.ReliefStyle.NONE);
+      button.set_alignment(0.0, 0.5);
+
+      button.connect("clicked", Lang.bind(this, (_button) => {
+        if (this._callback !== null) {
+          this._callback(action);
+        }
+      }));
+
+      this._icons.set(action, Gtk.Image.new_from_icon_name(iconName, Gtk.IconSize.MENU));
+      this._buttons.set(action, button);
+
+      return button;
+    }
+  }
+);
+
+const AddPopover = GObject.registerClass(
+  class TbsAddPopover extends Gtk.Popover {
+    _init(relativeWidget) {
+      super._init();
+      this.set_relative_to(relativeWidget);
+
+      this._box = Gtk.Box.new(Gtk.Orientation.VERTICAL, 0);
+      this._box.margin = 6;
+      this.add(this._box);
+
+      this._icons = new Map();
+      this._buttons = new Map();
+      for (const key in Action) {
+        this._makeButton(Action[key]);
+      }
+
+      this._callback = null;
+    }
+
+    setCallback(callback) {
+      this._callback = callback;
+    }
+
+    clear() {
+      for (const widget of this._box.get_children()) {
+        this._box.remove(widget);
+      }
+    }
+
+    update(gsettings) {
+      this.clear();
+      this.updateIcons(gsettings.get_boolean(Key.ICON_IN_MENU));
+
+      let hasAnyActions = false;
+
+      if (gsettings.get_uint(Key.COPY_ACTION) === 0) {
+        hasAnyActions = true;
+        this._box.add(this._buttons.get(Action.COPY));
+      }
+      if (gsettings.get_uint(Key.FILE_ACTION) === 0) {
+        hasAnyActions = true;
+        this._box.add(this._buttons.get(Action.FILE));
+      }
+      if (gsettings.get_uint(Key.TOOL_ACTION) === 0) {
+        hasAnyActions = true;
+        this._box.add(this._buttons.get(Action.TOOL));
+      }
+
+      this._box.show_all();
+
+      return hasAnyActions;
+    }
+
+    updateIcons(useIcons) {
+      if (useIcons) {
+        for (const [action, button] of this._buttons) {
+          button.set_image(this._icons.get(action));
+          button.always_show_image = true;
+        }
+      } else {
+        for (const [_, button] of this._buttons) {
+          button.set_image(null);
+        }
+      }
+    }
+
+    _makeButton(action) {
+      // TODO: move label to utility function
+      let label = "unknown";
+      switch (action) {
+        case Action.COPY:
+          label = "Copy screenshot";
+          break;
+        case Action.FILE:
+          label = "Screenshot to file";
+          break;
+        case Action.TOOL:
+          label = "Screenshot tool";
+          break;
+      }
+
+      const button = Gtk.Button.new();
+      button.set_label(label);
+      button.set_alignment(0.0, 0.5);
+
+      button.connect("clicked", Lang.bind(this, (_button) => {
+        if (this._callback !== null) {
+          this._callback(action);
+        }
+      }));
+
+      this._icons.set(action, Gtk.Image.new_from_icon_name(iconName, Gtk.IconSize.MENU));
+      this._buttons.set(action, button);
+
+      return button;
+    }
+
+  }
+);
+
 
 function init() {
 }
