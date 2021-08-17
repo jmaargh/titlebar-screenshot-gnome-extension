@@ -182,7 +182,7 @@ function pathToUri(path) {
         path = GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_PICTURES);
     }
 
-    Gio.File.new_for_path(path).get_uri()
+    return Gio.File.new_for_path(path).get_uri();
 }
 
 // Set on init, never unset
