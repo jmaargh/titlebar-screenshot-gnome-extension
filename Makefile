@@ -1,7 +1,16 @@
 
+NAME = $(shell cat ./metadata.json | jq -j '.name')
+UUID = $(shell cat ./metadata.json | jq -j '.uuid')
+VERSION = $(shell cat ./metadata.json | jq -j '.version')
+
+builddir := build
+
 js_files := $(wildcard *.js)
 schema_files := $(wildcard schemas/*.xml)
 translation_files := $(js_files) $(schema_files)
+sources := LICENSE-MIT $(js_files) $(schema_files)
+
+output := $(builddir)/$(UUID).zip
 
 schemas/gschemas.compiled: $(schema_files)
 	glib-compile-schemas schemas/
@@ -12,4 +21,21 @@ po/titlebar-screenshot.pot: $(translation_files)
 .PHONY: test-settings
 test-settings:
 	gjs /usr/share/gnome-shell/org.gnome.Shell.Extensions &\
-	  gnome-extensions prefs  titlebar-screenshot@jmaargh.github.com
+	  gnome-extensions prefs $(UUID)
+
+.PHONY: build
+build: $(output)
+
+$(output): $(sources)
+	mkdir -p $(builddir)
+	gnome-extensions pack \
+		--force \
+		$(addprefix --extra-source=,$(sources)) \
+		--podir=./po/ \
+		--gettext-domain=$(UUID) \
+		--out-dir=$(builddir) \
+		.
+
+.PHONY: clean
+clean:
+	-rm -rf $(builddir)
