@@ -12,7 +12,7 @@ var Action = {
 
 function getCurrentActions(gsettings) {
   return Object.keys(Action)
-    .map((k) => [Action[k], toKey(Action[k])])
+    .map((k) => [Action[k], toActionKey(Action[k])])
     .map(([a, k]) => [a, gsettings.get_uint(k)])
     .filter(([_, value]) => value > 0)
     .sort((a, b) => a[1] - b[1])
@@ -23,7 +23,7 @@ function saveActions(gsettings, actions) {
   let setActions = new Set();
   actions.forEach((action, index) => {
     if (!setActions.has(action)) {
-      gsettings.set_uint(toKey(action), index + 1);
+      gsettings.set_uint(toActionKey(action), index + 1);
     }
     setActions.add(action);
   });
@@ -31,10 +31,10 @@ function saveActions(gsettings, actions) {
   Object.keys(Action)
     .map((k) => Action[k])
     .filter((a) => !setActions.has(a))
-    .forEach((a) => gsettings.set_uint(toKey(a), 0));
+    .forEach((a) => gsettings.set_uint(toActionKey(a), 0));
 }
 
-function toKey(action) {
+function toActionKey(action) {
   if (action === Action.COPY) {
     return Key.COPY_ACTION;
   }
@@ -46,19 +46,16 @@ function toKey(action) {
   }
 }
 
-function getActionText(gsettings, action) {
-  let key;
+function toTextKey(action) {
   if (action === Action.COPY) {
-    key = Key.COPY_TEXT;
+    return Key.COPY_TEXT;
   }
   if (action === Action.FILE) {
-    key = Key.FILE_TEXT;
+    return Key.FILE_TEXT;
   }
   if (action === Action.TOOL) {
-    key = Key.TOOL_TEXT;
+    return Key.TOOL_TEXT;
   }
-
-  return gsettings.get_string(key);
 }
 
 function getDefaultText(action) {

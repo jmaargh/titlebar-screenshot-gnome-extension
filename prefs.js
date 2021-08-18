@@ -6,7 +6,12 @@ const ExtensionUtils = imports.misc.extensionUtils;
 const extension = ExtensionUtils.getCurrentExtension();
 const { Key, iconName } = extension.imports.vars;
 const {
-  Action, getCurrentActions, saveActions, toKey, getDefaultText, getActionText
+  Action,
+  getCurrentActions,
+  saveActions,
+  toActionKey,
+  toTextKey,
+  getDefaultText,
 } = extension.imports.actions;
 
 const SettingsWidget = GObject.registerClass(
@@ -117,7 +122,7 @@ const SettingsWidget = GObject.registerClass(
       menuItemsBox.margin_end = 6;
       frame.add(menuItemsBox);
 
-      this.menuItems = new MenuItems();
+      this.menuItems = new MenuItems(this.gsettings);
       this.menuItems.setCallback((...args) => this.onEditAction(...args));
       menuItemsBox.add(this.menuItems);
 
@@ -156,20 +161,27 @@ const SettingsWidget = GObject.registerClass(
       saveActions(this.gsettings, actions);
     }
 
-    onEditAction(action, edit_action, other_action = null) {
-      if (edit_action === EditAction.REMOVE) {
+    onEditAction(action, editAction, otherData = null) {
+      if (editAction === EditAction.REMOVE) {
         let actions = getCurrentActions(this.gsettings);
         actions = actions.filter((a) => a !== action);
         saveActions(this.gsettings, actions);
-      } else if (edit_action === EditAction.SWAP) {
-        const actionKey = toKey(action);
-        const otherActionKey = toKey(other_action);
+      } else if (editAction === EditAction.SWAP) {
+        const otherAction = otherData;
+        const actionKey = toActionKey(action);
+        const otherActionKey = toActionKey(otherAction);
 
         let actionValue = this.gsettings.get_uint(actionKey);
         let otherActionValue = this.gsettings.get_uint(otherActionKey);
 
         this.gsettings.set_uint(actionKey, otherActionValue);
         this.gsettings.set_uint(otherActionKey, actionValue);
+      } else if (editAction === EditAction.RENAME) {
+        let newText = getDefaultText(action);
+        if (otherData !== null) {
+          newText = otherData;
+        }
+        this.gsettings.set_string(toTextKey(action), newText);
       }
     }
 
@@ -199,8 +211,8 @@ const SettingsWidget = GObject.registerClass(
 
 const MenuItems = GObject.registerClass(
   class TbsSettingsMenuItems extends Gtk.Box {
-    _init(...args) {
-      super._init(...args);
+    _init(gsettings) {
+      super._init();
 
       this.set_orientation(Gtk.Orientation.VERTICAL);
       this.set_spacing(0);
@@ -212,8 +224,9 @@ const MenuItems = GObject.registerClass(
 
       this._buttons = new Map();
       this._icons = new Map();
+      this._popovers = new Map();
       for (const key in Action) {
-        this._makeButton(Action[key]);
+        this._makeButton(Action[key], gsettings);
       }
 
       this._callback = null;
@@ -269,11 +282,11 @@ const MenuItems = GObject.registerClass(
 
     updateLabels(gsettings) {
       for (const [action, button] of this._buttons) {
-        button.set_label(getActionText(gsettings, action));
+        button.set_label(gsettings.get_string(toTextKey(action)));
       }
     }
 
-    _makeButton(action) {
+    _makeButton(action, gsettings) {
       const button = Gtk.Button.new();
       button.set_label("");
       button.set_relief(Gtk.ReliefStyle.NONE);
@@ -282,8 +295,12 @@ const MenuItems = GObject.registerClass(
       const popover = new EditPopover(button, action);
       popover.setCallback((...args) => this._callback(...args));
 
-      button.connect("clicked", (_button) => popover.popup());
+      button.connect("clicked", (_button) => {
+        popover.updateText(gsettings.get_string(toTextKey(action)));
+        popover.popup();
+      });
 
+      this._popovers.set(action, popover);
       this._icons.set(action, Gtk.Image.new_from_icon_name(iconName, Gtk.IconSize.MENU));
       this._buttons.set(action, button);
 
@@ -329,7 +346,7 @@ const AddPopover = GObject.registerClass(
 
       for (const key in Action) {
         const action = Action[key];
-        if (gsettings.get_uint(toKey(action)) === 0) {
+        if (gsettings.get_uint(toActionKey(action)) === 0) {
           hasAnyActions = true;
           this._box.add(this._buttons.get(action));
         }
@@ -389,7 +406,7 @@ const EditPopover = GObject.registerClass(
       this.set_constrain_to(Gtk.PopoverConstraint.NONE);
 
       this.action = action;
-      this._swapBox = null;
+      this._entry = null;
       this._callback = null;
 
       const box = Gtk.Box.new(Gtk.Orientation.VERTICAL, 24);
@@ -407,6 +424,9 @@ const EditPopover = GObject.registerClass(
       this._callback = callback;
     }
 
+    updateText(text) {
+      this._entry.set_text(text);
+    }
 
     _makeSwapBox(parent) {
       const box = Gtk.Box.new(Gtk.Orientation.VERTICAL, 6);
@@ -434,21 +454,30 @@ const EditPopover = GObject.registerClass(
       const hbox = Gtk.Box.new(Gtk.Orientation.HORIZONTAL, 0);
       box.add(hbox);
 
-      const entry = Gtk.Entry.new();
-      hbox.pack_start(entry, true, true, 0);
+      this._entry = Gtk.Entry.new();
+      hbox.pack_start(this._entry, true, true, 0);
 
       const apply = Gtk.Button.new_from_icon_name("gtk-apply", Gtk.IconSize.BUTTON);
       apply.connect("clicked", (_button) => {
         this.popdown();
         if (this._callback !== null) {
-          this._callback(this.action, EditAction.RENAME);
+          this._callback(this.action, EditAction.RENAME, this._entry.get_text());
         }
       });
       hbox.add(apply);
 
-      entry.connect("activate", (_entry) => {
+      this._entry.connect("activate", (_entry) => {
         apply.clicked();
       });
+
+      const reset = Gtk.Button.new_from_icon_name("gtk-undo", Gtk.IconSize.BUTTON);
+      reset.connect("clicked", (_button) => {
+        this.popdown();
+        if (this._callback !== null) {
+          this._callback(this.action, EditAction.RENAME, null);
+        }
+      });
+      hbox.add(reset);
 
       parent.add(box);
       return box;
