@@ -1,4 +1,4 @@
-
+'use strict';
 
 const { Gtk, GObject, Handy } = imports.gi;
 const Lang = imports.lang;

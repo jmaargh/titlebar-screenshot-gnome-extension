@@ -1,3 +1,4 @@
+'use strict';
 
 const ExtensionUtils = imports.misc.extensionUtils;
 const extension = ExtensionUtils.getCurrentExtension();
