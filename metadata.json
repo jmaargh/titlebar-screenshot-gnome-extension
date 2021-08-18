@@ -2,6 +2,7 @@
   "name": "Titlebar Screenshot",
   "description": "Take screenshots by right-clicking on window titlebars.\nThis configurable extension adds entries to the right-click menu on window titlebars to invoke gnome-screenshot in various ways. Screenshots can be taken to the clipboard, to a file, or by opening the interactive tool.",
   "uuid": "titlebar-screenshot@jmaargh.github.com",
+  "url": "https://github.com/jmaargh/titlebar-screenshot-gnome-extension",
   "shell-version": [
     "3.38"
   ],
