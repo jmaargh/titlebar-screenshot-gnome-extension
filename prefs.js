@@ -204,6 +204,8 @@ const MenuItems = GObject.registerClass(
 
       this.set_orientation(Gtk.Orientation.VERTICAL);
       this.set_spacing(0);
+      this.margin = 12;
+      this.set_size_request(160, -1);
 
       this._firstSeparator = Gtk.Separator.new(Gtk.Orientation.HORIZONTAL);
       this._secondSeparator = Gtk.Separator.new(Gtk.Orientation.HORIZONTAL);
