@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<schemalist>
+<schemalist gettext-domain="titlebar-screenshot@jmaargh.github.com">
   <schema id="org.gnome.shell.extensions.titlebar-screenshot" path="/org/gnome/shell/extensions/titlebar-screenshot/">
     <key name="copy-action" type="u">
       <default>1</default>
@@ -14,15 +14,15 @@
       <summary>Whether and where to show the screenshot tool action. 0 will disable this action, positive numbers indicate the order they are shown in (lower numbers appear first).</summary>
     </key>
     <key name="copy-action-text" type="s">
-      <default>'Copy screenshot'</default>
+      <default l10n="messages">'Copy screenshot'</default>
       <summary>Text for the action which copies a screenshot to the clipboard.</summary>
     </key>
     <key name="file-action-text" type="s">
-      <default>'Screenshot to file'</default>
+      <default l10n="messages">'Screenshot to file'</default>
       <summary>Text for the action which saves a screenshot to a file.</summary>
     </key>
     <key name="tool-action-text" type="s">
-      <default>'Screenshot tool'</default>
+      <default l10n="messages">'Screenshot tool'</default>
       <summary>Text for the action which opens the screenshot tool.</summary>
     </key>
     <key name="menu-position" type="u">

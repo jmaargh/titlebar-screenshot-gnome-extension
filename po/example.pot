@@ -1,0 +1,169 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2021-08-18 22:39+0100\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=CHARSET\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: actions.js:88
+msgid "Copy screenshot"
+msgstr ""
+
+#: actions.js:91
+msgid "Screenshot to file"
+msgstr ""
+
+#: actions.js:94
+msgid "Screenshot tool"
+msgstr ""
+
+#: extension.js:93 extension.js:117
+msgid "Screenshot captured"
+msgstr ""
+
+#: extension.js:93
+msgid "Image copied to clipboard"
+msgstr ""
+
+#: extension.js:96 extension.js:120
+msgid "STATUS"
+msgstr ""
+
+#: extension.js:98 extension.js:122
+msgid "Screenshot failed"
+msgstr ""
+
+#: extension.js:117
+msgid "Click to open containing directory"
+msgstr ""
+
+#: extension.js:161
+msgid "Open containing directory"
+msgstr ""
+
+#: prefs.js:73
+msgid "Configuration"
+msgstr ""
+
+#: prefs.js:81
+msgid ""
+"Configured immediately. To test, right-click the titlebar of the current "
+"window."
+msgstr ""
+
+#: prefs.js:95
+msgid "Position in menu"
+msgstr ""
+
+#: prefs.js:96
+msgid ""
+"Number of items before screenshot actions\n"
+"(including separators)"
+msgstr ""
+
+#: prefs.js:110
+msgid "Add separators"
+msgstr ""
+
+#: prefs.js:111
+msgid "Insert separators around screenshot actions in menu"
+msgstr ""
+
+#: prefs.js:123
+msgid "Show icons"
+msgstr ""
+
+#: prefs.js:124
+msgid "Add icon next to all screenshot actions"
+msgstr ""
+
+#: prefs.js:140
+msgid "Menu items"
+msgstr ""
+
+#: prefs.js:159
+msgid "Add"
+msgstr ""
+
+#: prefs.js:462
+msgid "Replace with"
+msgstr ""
+
+#: prefs.js:480
+msgid "Menu item text"
+msgstr ""
+
+#: prefs.js:516
+msgid "Remove"
+msgstr ""
+
+#: schemas/org.gnome.shell.extensions.titlebar-screenshot.gschema.xml:6
+msgid ""
+"Whether and where to show the copy screenshot action. 0 will disable this "
+"action, positive numbers indicate the order they are shown in (lower numbers "
+"appear first)."
+msgstr ""
+
+#: schemas/org.gnome.shell.extensions.titlebar-screenshot.gschema.xml:10
+msgid ""
+"Whether and where to show the screenshot-to-file action. 0 will disable this "
+"action, positive numbers indicate the order they are shown in (lower numbers "
+"appear first)."
+msgstr ""
+
+#: schemas/org.gnome.shell.extensions.titlebar-screenshot.gschema.xml:14
+msgid ""
+"Whether and where to show the screenshot tool action. 0 will disable this "
+"action, positive numbers indicate the order they are shown in (lower numbers "
+"appear first)."
+msgstr ""
+
+#: schemas/org.gnome.shell.extensions.titlebar-screenshot.gschema.xml:17
+msgid "'Copy screenshot'"
+msgstr ""
+
+#: schemas/org.gnome.shell.extensions.titlebar-screenshot.gschema.xml:18
+msgid "Text for the action which copies a screenshot to the clipboard."
+msgstr ""
+
+#: schemas/org.gnome.shell.extensions.titlebar-screenshot.gschema.xml:21
+msgid "'Screenshot to file'"
+msgstr ""
+
+#: schemas/org.gnome.shell.extensions.titlebar-screenshot.gschema.xml:22
+msgid "Text for the action which saves a screenshot to a file."
+msgstr ""
+
+#: schemas/org.gnome.shell.extensions.titlebar-screenshot.gschema.xml:25
+msgid "'Screenshot tool'"
+msgstr ""
+
+#: schemas/org.gnome.shell.extensions.titlebar-screenshot.gschema.xml:26
+msgid "Text for the action which opens the screenshot tool."
+msgstr ""
+
+#: schemas/org.gnome.shell.extensions.titlebar-screenshot.gschema.xml:30
+msgid ""
+"Position to show actions in the context menu. This is the number of items "
+"(including separators) which will appear before screenshot actions."
+msgstr ""
+
+#: schemas/org.gnome.shell.extensions.titlebar-screenshot.gschema.xml:34
+msgid "Use separators in the context menu around screenshot actions."
+msgstr ""
+
+#: schemas/org.gnome.shell.extensions.titlebar-screenshot.gschema.xml:38
+msgid "Show icon next to menu items."
+msgstr ""

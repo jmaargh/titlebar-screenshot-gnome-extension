@@ -28,7 +28,11 @@
 const { Gtk, GObject, Handy } = imports.gi;
 const Lang = imports.lang;
 const ExtensionUtils = imports.misc.extensionUtils;
+
 const extension = ExtensionUtils.getCurrentExtension();
+const Gettext = imports.gettext.domain(extension.metadata.uuid);
+const _ = Gettext.gettext;
+
 const { Key, iconName } = extension.imports.vars;
 const {
   Action,
@@ -66,7 +70,7 @@ const SettingsWidget = GObject.registerClass(
 
     makeConfigurationBox() {
       const box = Gtk.Box.new(Gtk.Orientation.VERTICAL, 6);
-      const title = Gtk.Label.new("<b>Configuration</b>");
+      const title = Gtk.Label.new(`<b>${_("Configuration")}</b>`);
       title.set_use_markup(true);
       title.set_xalign(0.0);
       box.add(title);
@@ -74,7 +78,7 @@ const SettingsWidget = GObject.registerClass(
       const configuration = this.makeConfigurationOptions();
       box.add(configuration);
 
-      const testingLabel = Gtk.Label.new("Configured immediately. To test, right-click the titlebar of the current window.");
+      const testingLabel = Gtk.Label.new(_("Configured immediately. To test, right-click the titlebar of the current window."));
       testingLabel.set_xalign(0.0);
       testingLabel.set_line_wrap(true);
       box.add(testingLabel);
@@ -88,8 +92,8 @@ const SettingsWidget = GObject.registerClass(
       box.set_selection_mode(Gtk.SelectionMode.NONE);
 
       const positionRow = this.makeConfigurationRow(
-        "Position in menu",
-        "Number of items before screenshot actions\n(including separators)"
+        _("Position in menu"),
+        _("Number of items before screenshot actions\n(including separators)")
       );
       this.positionSpinner = new Gtk.SpinButton();
       this.positionSpinner.set_valign(Gtk.Align.CENTER);
@@ -103,8 +107,8 @@ const SettingsWidget = GObject.registerClass(
       box.add(positionRow);
 
       const separatorsRow = this.makeConfigurationRow(
-        "Add separators",
-        "Insert separators around screenshot actions in menu",
+        _("Add separators"),
+        _("Insert separators around screenshot actions in menu"),
       );
       this.separatorsSwitch = Gtk.Switch.new();
       this.separatorsSwitch.set_valign(Gtk.Align.CENTER);
@@ -116,8 +120,8 @@ const SettingsWidget = GObject.registerClass(
       box.add(separatorsRow);
 
       const iconsRow = this.makeConfigurationRow(
-        "Show icons",
-        "Add icon next to all screenshot actions",
+        _("Show icons"),
+        _("Add icon next to all screenshot actions"),
       );
       this.iconsSwitch = Gtk.Switch.new();
       this.iconsSwitch.set_valign(Gtk.Align.CENTER);
@@ -133,7 +137,7 @@ const SettingsWidget = GObject.registerClass(
 
     makeMenuItems() {
       const frame = Gtk.Frame.new("");
-      const label = Gtk.Label.new("<b>Menu items</b>");
+      const label = Gtk.Label.new(`<b>${_("Menu items")}</b>`);
       label.set_use_markup(true);
       frame.set_label_widget(label);
       frame.set_label_align(0.5, 0.5);
@@ -152,7 +156,7 @@ const SettingsWidget = GObject.registerClass(
       menuItemsBox.add(this.menuItems);
 
       this.addButton = Gtk.MenuButton.new();
-      this.addButton.set_label("Add");
+      this.addButton.set_label(_("Add"));
       const addImage = Gtk.Image.new_from_icon_name("gtk-add", Gtk.IconSize.MENU);
       this.addButton.set_image(addImage);
       this.addButton.always_show_image = true;
@@ -202,7 +206,7 @@ const SettingsWidget = GObject.registerClass(
         this.gsettings.set_uint(actionKey, otherActionValue);
         this.gsettings.set_uint(otherActionKey, actionValue);
       } else if (editAction === EditAction.RENAME) {
-        let newText = getDefaultText(action);
+        let newText = getDefaultText(action, _);
         if (otherData !== null) {
           newText = otherData;
         }
@@ -397,7 +401,7 @@ const AddPopover = GObject.registerClass(
 
     _makeButton(action) {
       const button = Gtk.Button.new();
-      button.set_label(getDefaultText(action));
+      button.set_label(getDefaultText(action, _));
       button.set_alignment(0.0, 0.5);
 
       button.connect("clicked", (_button) => {
@@ -455,7 +459,7 @@ const EditPopover = GObject.registerClass(
 
     _makeSwapBox(parent) {
       const box = Gtk.Box.new(Gtk.Orientation.VERTICAL, 6);
-      const label = Gtk.Label.new("Replace with");
+      const label = Gtk.Label.new(_("Replace with"));
       box.add(label);
 
       const buttonBox = Gtk.Box.new(Gtk.Orientation.VERTICAL, 0);
@@ -473,7 +477,7 @@ const EditPopover = GObject.registerClass(
 
     _makeRenameBox(parent) {
       const box = Gtk.Box.new(Gtk.Orientation.VERTICAL, 6);
-      const label = Gtk.Label.new("Menu item text");
+      const label = Gtk.Label.new(_("Menu item text"));
       box.add(label);
 
       const hbox = Gtk.Box.new(Gtk.Orientation.HORIZONTAL, 0);
@@ -509,7 +513,7 @@ const EditPopover = GObject.registerClass(
     }
 
     _makeRemoveButton(parent) {
-      const button = Gtk.Button.new_with_label("Remove");
+      const button = Gtk.Button.new_with_label(_("Remove"));
       const icon = Gtk.Image.new_from_icon_name("gtk-delete", Gtk.IconSize.BUTTON);
       button.set_image(icon);
       button.always_show_image = true;
@@ -527,7 +531,7 @@ const EditPopover = GObject.registerClass(
 
     _makeButton(action) {
       const button = Gtk.Button.new();
-      button.set_label(getDefaultText(action));
+      button.set_label(getDefaultText(action, _));
       button.set_alignment(0.0, 0.5);
 
       button.connect("clicked", (_button) => {
@@ -544,6 +548,7 @@ const EditPopover = GObject.registerClass(
 
 
 function init() {
+  ExtensionUtils.initTranslations(extension.metadata.uuid);
 }
 
 function buildPrefsWidget() {

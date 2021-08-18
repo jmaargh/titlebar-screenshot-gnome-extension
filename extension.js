@@ -31,6 +31,9 @@ const MessageTray = imports.ui.messageTray;
 const ExtensionUtils = imports.misc.extensionUtils;
 
 const extension = ExtensionUtils.getCurrentExtension();
+const Gettext = imports.gettext.domain(extension.metadata.uuid);
+const _ = Gettext.gettext;
+
 const { iconName, errorIconName, Key } = extension.imports.vars;
 const { Action, getCurrentActions } = extension.imports.actions;
 
@@ -87,12 +90,12 @@ class CustomWindowMenu extends imports.ui.windowMenu.WindowMenu {
                     process.wait_finish(result);
 
                     if (process.get_successful()) {
-                        notify("Screenshot captured", "Image copied to clipboard", false);
+                        notify(_("Screenshot captured"), _("Image copied to clipboard"), false);
                     } else {
                         let error_message = errorFromSubprocess(process);
-                        error_message.push(`STATUS: ${process.get_exit_status()}`);
+                        error_message.push(`${_("STATUS")}: ${process.get_exit_status()}`);
 
-                        notify("Screenshot failed", error_message.join('\n'), false, true);
+                        notify(_("Screenshot failed"), error_message.join('\n'), false, true);
                     }
                 } catch (error) {
                     logError(error);
@@ -111,12 +114,12 @@ class CustomWindowMenu extends imports.ui.windowMenu.WindowMenu {
                     process.wait_finish(result);
 
                     if (process.get_successful()) {
-                        notify("Screenshot captured", "Click to open containing directory", true);
+                        notify(_("Screenshot captured"), _("Click to open containing directory"), true);
                     } else {
                         let error_message = errorFromSubprocess(process);
-                        error_message.push(`STATUS: ${process.get_exit_status()}`);
+                        error_message.push(`${_("STATUS")}: ${process.get_exit_status()}`);
 
-                        notify("Screenshot failed", error_message.join('\n'), false, true);
+                        notify(_("Screenshot failed"), error_message.join('\n'), false, true);
                     }
                 } catch (error) {
                     logError(error);
@@ -155,7 +158,7 @@ function notify(title, message, directory_action, is_error = false) {
     let notification = new MessageTray.Notification(source, title, message, params);
     notification.setTransient(true);
     if (directory_action) {
-        notification.addAction("Open containing directory", () => {
+        notification.addAction(_("Open containing directory"), () => {
             Gio.AppInfo.launch_default_for_uri(settings.screenshotDirUri, null);
         });
     }
@@ -257,6 +260,8 @@ function initSettings() {
 }
 
 function init() {
+    ExtensionUtils.initTranslations(extension.metadata.uuid);
+
     res.gicon = Gio.ThemedIcon.new(iconName);
     res.errorGIcon = Gio.ThemedIcon.new(errorIconName);
 }

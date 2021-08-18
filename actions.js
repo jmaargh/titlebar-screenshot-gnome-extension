@@ -83,18 +83,14 @@ function toTextKey(action) {
   }
 }
 
-function getDefaultText(action) {
-  let text = "unknown";
-  switch (action) {
-    case Action.COPY:
-      text = "Copy screenshot";
-      break;
-    case Action.FILE:
-      text = "Screenshot to file";
-      break;
-    case Action.TOOL:
-      text = "Screenshot tool";
-      break;
+function getDefaultText(action, gettext) {
+  if (action === Action.COPY) {
+    return gettext("Copy screenshot");
   }
-  return text;
+  if (action === Action.FILE) {
+    return gettext("Screenshot to file");
+  }
+  if (action === Action.TOOL) {
+    return gettext("Screenshot tool");
+  }
 }
