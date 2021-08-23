@@ -46,3 +46,8 @@ All contributions and feedback are welcome. Please open issues for
 * Feature requests
 
 or anything else you can think of.
+
+## License
+
+You may choose to receive this under either the MIT license or the GPL version
+2 license, both are attached.

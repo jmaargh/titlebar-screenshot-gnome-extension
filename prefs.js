@@ -20,7 +20,10 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  * IN THE SOFTWARE.
  *
- * SPDX-License-Identifier: MIT
+ * SPDX-License-Identifier: MIT OR GPL-2.0-only
+ *
+ * Licensed under either MIT (above) or GPL version 2 (attached) licenses, at
+ * your option.
  */
 
 'use strict';
