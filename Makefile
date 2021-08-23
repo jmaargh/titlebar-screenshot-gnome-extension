@@ -18,14 +18,6 @@ schemas/gschemas.compiled: $(schema_files)
 po/titlebar-screenshot.pot: $(translation_files)
 	xgettext --from-code=UTF-8 --output=po/example.pot $(translation_files)
 
-.PHONY: test-settings
-test-settings:
-	gjs /usr/share/gnome-shell/org.gnome.Shell.Extensions &\
-	  gnome-extensions prefs $(UUID)
-
-.PHONY: build
-build: $(output)
-
 $(output): $(sources)
 	mkdir -p $(builddir)
 	gnome-extensions pack \
@@ -36,6 +28,22 @@ $(output): $(sources)
 		--out-dir=$(builddir) \
 		.
 
+.PHONY: test-settings
+test-settings:
+	gjs /usr/share/gnome-shell/org.gnome.Shell.Extensions & \
+	  gnome-extensions prefs $(UUID)
+
 .PHONY: clean
 clean:
 	-rm -rf $(builddir)
+
+.PHONY: build
+build: $(output)
+
+.PHONY: install
+install: uninstall
+	gnome-extensions install --force ./build/$(UUID).shell-extension.zip
+
+.PHONY: uninstall
+uninstall:
+	-gnome-extensions uninstall $(UUID)
