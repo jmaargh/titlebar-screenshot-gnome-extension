@@ -29,7 +29,6 @@
 'use strict';
 
 const { Gtk, GObject, Handy } = imports.gi;
-const Lang = imports.lang;
 const ExtensionUtils = imports.misc.extensionUtils;
 
 const extension = ExtensionUtils.getCurrentExtension();
