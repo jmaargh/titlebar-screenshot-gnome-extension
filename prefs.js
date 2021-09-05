@@ -28,14 +28,17 @@
 
 'use strict';
 
-const { Gtk, GObject, Handy } = imports.gi;
-const ExtensionUtils = imports.misc.extensionUtils;
+const { Gtk, Gio, GObject, Pango } = imports.gi;
+// const ExtensionUtils = imports.misc.extensionUtils;  // FIXME: revert
 
-const extension = ExtensionUtils.getCurrentExtension();
-const Gettext = imports.gettext.domain(extension.metadata.uuid);
+// const extension = ExtensionUtils.getCurrentExtension();  // FIXME: revert
+// const Gettext = imports.gettext.domain(extension.metadata.uuid);  // FIXME: revert
+const Gettext = imports.gettext.domain("titlebar-screenshot@jmaargh.github.com");  // FIXME: revert
 const _ = Gettext.gettext;
 
-const { Key, iconName } = extension.imports.vars;
+imports.searchPath.unshift(".");  // FIXME: revert
+const { Key, iconName } = imports.vars;  // FIXME: revert
+// const { Key, iconName } = extension.imports.vars;  // FIXME: revert
 const {
   Action,
   getCurrentActions,
@@ -43,19 +46,51 @@ const {
   toActionKey,
   toTextKey,
   getDefaultText,
-} = extension.imports.actions;
+  // } = extension.imports.actions;  // FIXME: revert
+} = imports.actions;
+const {
+  IS_GTK4,
+  gtkShowAll,
+  gtkBoxAdd,
+  gtkBoxGetChildren,
+  gtkBoxPackStart,
+  gtkBoxPackEnd,
+  gtkWidgetMargin,
+  gtkSetChild,
+  gtkLabelSetWrap,
+  gtkButtonSetHasFrame,
+  // } = extension.imports.compat;  // FIXME: revert
+} = imports.compat;
+
+// TODO: replace all button contents controls with manual GtkBox children
+// and provide functions in .compat to control setting labels, images, and
+// alignment
+// TODO: work out what the hell is going on with popovers in GTK4
 
 const SettingsWidget = GObject.registerClass(
   class TitlebarScreenshotSettingsWidget extends Gtk.Box {
     _init(...args) {
       super._init(...args);
 
-      this.margin = 32;
+      gtkWidgetMargin(this, 32);
       this.spacing = 12;
       this.fill = true;
       this.set_orientation(Gtk.Orientation.HORIZONTAL);
 
-      this.gsettings = ExtensionUtils.getSettings();
+      // FIXME: revert
+      // this.gsettings = ExtensionUtils.getSettings();
+      let gschema = Gio.SettingsSchemaSource.new_from_directory(
+        "schemas",
+        Gio.SettingsSchemaSource.get_default(),
+        false
+      );
+      this.gsettings = new Gio.Settings({
+        settings_schema: gschema.lookup(
+          "org.gnome.shell.extensions.titlebar-screenshot",
+          true
+        ),
+      });
+
 
       this.positionSpinner = null;
       this.separatorsSwitch = null;
@@ -63,8 +98,8 @@ const SettingsWidget = GObject.registerClass(
       this.addButton = null;
       this.menuItems = null;
 
-      this.add(this.makeConfigurationBox());
-      this.add(this.makeMenuItems());
+      gtkBoxAdd(this, this.makeConfigurationBox());
+      gtkBoxAdd(this, this.makeMenuItems());
 
       this.connectSettingsChanged();
       this.onSettingsChanged(this.gsettings, null);
@@ -75,15 +110,15 @@ const SettingsWidget = GObject.registerClass(
       const title = Gtk.Label.new(`<b>${_("Configuration")}</b>`);
       title.set_use_markup(true);
       title.set_xalign(0.0);
-      box.add(title);
+      gtkBoxAdd(box, title);
 
       const configuration = this.makeConfigurationOptions();
-      box.add(configuration);
+      gtkBoxAdd(box, configuration);
 
       const testingLabel = Gtk.Label.new(_("Configured immediately. To test, right-click the titlebar of the current window."));
       testingLabel.set_xalign(0.0);
-      testingLabel.set_line_wrap(true);
-      box.add(testingLabel);
+      gtkLabelSetWrap(testingLabel, true);
+      gtkBoxAdd(box, testingLabel);
 
       return box;
     }
@@ -93,10 +128,6 @@ const SettingsWidget = GObject.registerClass(
       box.set_valign(Gtk.Align.START);
       box.set_selection_mode(Gtk.SelectionMode.NONE);
 
-      const positionRow = this.makeConfigurationRow(
-        _("Position in menu"),
-        _("Number of items before screenshot actions\n(including separators)")
-      );
       this.positionSpinner = new Gtk.SpinButton();
       this.positionSpinner.set_valign(Gtk.Align.CENTER);
       this.positionSpinner.set_halign(Gtk.Align.CEEND);
@@ -105,34 +136,38 @@ const SettingsWidget = GObject.registerClass(
       this.positionSpinner.connect("value-changed", (spinner) =>
         this.gsettings.set_uint(Key.MENU_POSITION, spinner.get_value_as_int())
       );
-      positionRow.add(this.positionSpinner);
-      box.add(positionRow);
-
-      const separatorsRow = this.makeConfigurationRow(
-        _("Add separators"),
-        _("Insert separators around screenshot actions in menu"),
+      const positionRow = this.makeConfigurationRow(
+        _("Position in menu"),
+        _("Number of items before screenshot actions\n(including separators)"),
+        this.positionSpinner,
       );
+      gtkBoxAdd(box, positionRow);
+
       this.separatorsSwitch = Gtk.Switch.new();
       this.separatorsSwitch.set_valign(Gtk.Align.CENTER);
       this.separatorsSwitch.set_halign(Gtk.Align.END);
       this.separatorsSwitch.connect("notify::active", (widget) =>
         this.gsettings.set_boolean(Key.USE_SEPARATORS, widget.active)
       );
-      separatorsRow.add(this.separatorsSwitch);
-      box.add(separatorsRow);
-
-      const iconsRow = this.makeConfigurationRow(
-        _("Show icons"),
-        _("Add icon next to all screenshot actions"),
+      const separatorsRow = this.makeConfigurationRow(
+        _("Add separators"),
+        _("Insert separators around screenshot actions in menu"),
+        this.separatorsSwitch,
       );
+      gtkBoxAdd(box, separatorsRow);
+
       this.iconsSwitch = Gtk.Switch.new();
       this.iconsSwitch.set_valign(Gtk.Align.CENTER);
       this.iconsSwitch.set_halign(Gtk.Align.END);
       this.iconsSwitch.connect("notify::active", (widget) =>
         this.gsettings.set_boolean(Key.ICON_IN_MENU, widget.active)
       );
-      iconsRow.add(this.iconsSwitch);
-      box.add(iconsRow);
+      const iconsRow = this.makeConfigurationRow(
+        _("Show icons"),
+        _("Add icon next to all screenshot actions"),
+        this.iconsSwitch,
+      );
+      gtkBoxAdd(box, iconsRow);
 
       return box;
     }
@@ -151,32 +186,52 @@ const SettingsWidget = GObject.registerClass(
       menuItemsBox.margin_bottom = 24;
       menuItemsBox.margin_start = 6;
       menuItemsBox.margin_end = 6;
-      frame.add(menuItemsBox);
+      gtkSetChild(frame, menuItemsBox);
 
       this.menuItems = new MenuItems(this.gsettings);
       this.menuItems.setCallback((...args) => this.onEditAction(...args));
-      menuItemsBox.add(this.menuItems);
+      gtkBoxAdd(menuItemsBox, this.menuItems);
 
       this.addButton = Gtk.MenuButton.new();
       this.addButton.set_label(_("Add"));
-      const addImage = Gtk.Image.new_from_icon_name("gtk-add", Gtk.IconSize.MENU);
-      this.addButton.set_image(addImage);
-      this.addButton.always_show_image = true;
+      // FIXME: revert and gtk4
+      // const addImage = Gtk.Image.new_from_icon_name("gtk-add", Gtk.IconSize.MENU);
+      // this.addButton.set_image(addImage);
+      // this.addButton.always_show_image = true;
+      // this.addButton.set_alignment(0.0, 0.5);
       this.addButton.margin_top = 24;
-      this.addButton.set_alignment(0.0, 0.5);
       this.addButton.set_popover(this.makeAddPopover(this.addButton));
 
-      menuItemsBox.add(this.addButton);
+      gtkBoxAdd(menuItemsBox, this.addButton);
 
       return frame;
     }
 
-    makeConfigurationRow(title, subtitle) {
-      const row = Handy.ActionRow.new();
-      row.set_title(title);
+    makeConfigurationRow(title, subtitle, child) {
+      const row = Gtk.ListBoxRow.new();
+      row.set_activatable(false);
+      row.set_selectable(false);
+      gtkWidgetMargin(row, 6);
+      const box = Gtk.Box.new(Gtk.Orientation.HORIZONTAL, 12);
+
+      const textBox = Gtk.Box.new(Gtk.Orientation.VERTICAL, 6);
+      const titleLabel = Gtk.Label.new(title);
+      titleLabel.set_ellipsize(Pango.EllipsizeMode.END);
+      titleLabel.set_xalign(0.0);
+      gtkBoxAdd(textBox, titleLabel);
+
       if (subtitle !== null && subtitle !== undefined) {
-        row.set_subtitle(subtitle);
+        const subtitleLabel = Gtk.Label.new(`<span font_size="smaller" alpha="55%">${subtitle}</span>`);
+        subtitleLabel.set_ellipsize(Pango.EllipsizeMode.END);
+        subtitleLabel.set_xalign(0.0);
+        subtitleLabel.set_use_markup(true);
+        gtkBoxAdd(textBox, subtitleLabel);
       }
+
+      gtkBoxPackStart(box, textBox, true, true, 0);
+      gtkBoxPackEnd(box, child, false, false, 0);
+      gtkSetChild(row, box);
+
       return row;
     }
 
@@ -247,7 +302,7 @@ const MenuItems = GObject.registerClass(
 
       this.set_orientation(Gtk.Orientation.VERTICAL);
       this.set_spacing(0);
-      this.margin = 12;
+      gtkWidgetMargin(this, 12);
       this.set_size_request(160, -1);
 
       this._firstSeparator = Gtk.Separator.new(Gtk.Orientation.HORIZONTAL);
@@ -269,7 +324,7 @@ const MenuItems = GObject.registerClass(
 
 
     clear() {
-      for (const widget of this.get_children()) {
+      for (const widget of gtkBoxGetChildren(this)) {
         this.remove(widget);
       }
     }
@@ -285,28 +340,30 @@ const MenuItems = GObject.registerClass(
 
       if (hasAnyActions) {
         if (useSeparators) {
-          this.pack_start(this._firstSeparator, true, true, 6);
+          gtkBoxPackStart(this, this._firstSeparator, true, true, 6);
         }
         for (const action of actions) {
-          this.add(this._buttons.get(action));
+          gtkBoxAdd(this, this._buttons.get(action));
         }
         if (useSeparators) {
-          this.pack_start(this._secondSeparator, true, true, 6);
+          gtkBoxPackEnd(this, this._secondSeparator, true, true, 6);
         }
       }
 
-      this.show_all();
+      gtkShowAll(this);
     }
 
     updateIcons(useIcons) {
       if (useIcons) {
         for (const [action, button] of this._buttons) {
-          button.set_image(this._icons.get(action));
-          button.always_show_image = true;
+          // FIXME: revert and gtk4
+          // button.set_image(this._icons.get(action));
+          // button.always_show_image = true;
         }
       } else {
         for (const [_, button] of this._buttons) {
-          button.set_image(null);
+          // FIXME: revert and gtk4
+          // button.set_image(null);
         }
       }
     }
@@ -320,8 +377,11 @@ const MenuItems = GObject.registerClass(
     _makeButton(action, gsettings) {
       const button = Gtk.Button.new();
       button.set_label("");
-      button.set_relief(Gtk.ReliefStyle.NONE);
-      button.set_alignment(0.0, 0.5);
+      gtkButtonSetHasFrame(button, false);
+      if (!IS_GTK4) {
+        // FIXME: style properly for GTK4
+        button.set_alignment(0.0, 0.5);
+      }
 
       const popover = new EditPopover(button, action);
       popover.setCallback((...args) => this._callback(...args));
@@ -344,11 +404,12 @@ const AddPopover = GObject.registerClass(
   class TbsAddPopover extends Gtk.Popover {
     _init(relativeWidget) {
       super._init();
-      this.set_relative_to(relativeWidget);
+      // FIXME: revert and GTK4
+      // this.set_relative_to(relativeWidget);
 
       this._box = Gtk.Box.new(Gtk.Orientation.VERTICAL, 0);
-      this._box.margin = 6;
-      this.add(this._box);
+      gtkWidgetMargin(this._box, 6);
+      gtkSetChild(this, this._box);
 
       this._icons = new Map();
       this._buttons = new Map();
@@ -364,7 +425,7 @@ const AddPopover = GObject.registerClass(
     }
 
     clear() {
-      for (const widget of this._box.get_children()) {
+      for (const widget of gtkBoxGetChildren(this._box)) {
         this._box.remove(widget);
       }
     }
@@ -379,11 +440,11 @@ const AddPopover = GObject.registerClass(
         const action = Action[key];
         if (gsettings.get_uint(toActionKey(action)) === 0) {
           hasAnyActions = true;
-          this._box.add(this._buttons.get(action));
+          gtkBoxAdd(this._box, this._buttons.get(action));
         }
       }
 
-      this._box.show_all();
+      gtkShowAll(this._box);
 
       return hasAnyActions;
     }
@@ -391,12 +452,14 @@ const AddPopover = GObject.registerClass(
     updateIcons(useIcons) {
       if (useIcons) {
         for (const [action, button] of this._buttons) {
-          button.set_image(this._icons.get(action));
-          button.always_show_image = true;
+          // FIXME: revert and gtk4
+          // button.set_image(this._icons.get(action));
+          // button.always_show_image = true;
         }
       } else {
         for (const [_, button] of this._buttons) {
-          button.set_image(null);
+          // FIXME: revert and gtk4
+          // button.set_image(null);
         }
       }
     }
@@ -404,7 +467,10 @@ const AddPopover = GObject.registerClass(
     _makeButton(action) {
       const button = Gtk.Button.new();
       button.set_label(getDefaultText(action, _));
-      button.set_alignment(0.0, 0.5);
+      if (!IS_GTK4) {
+        // FIXME: style properly for GTK4
+        button.set_alignment(0.0, 0.5);
+      }
 
       button.connect("clicked", (_button) => {
         this.popdown();
@@ -432,23 +498,26 @@ const EditPopover = GObject.registerClass(
   class TbsEditPopover extends Gtk.Popover {
     _init(relativeWidget, action) {
       super._init();
-      this.set_relative_to(relativeWidget);
+      if (!IS_GTK4) {
+        // FIXME: what are the GTK4 alternatives?
+        this.set_relative_to(relativeWidget);
+        this.set_constrain_to(Gtk.PopoverConstraint.NONE);
+      }
       this.set_position(Gtk.PositionType.BOTTOM);
-      this.set_constrain_to(Gtk.PopoverConstraint.NONE);
 
       this.action = action;
       this._entry = null;
       this._callback = null;
 
       const box = Gtk.Box.new(Gtk.Orientation.VERTICAL, 24);
-      box.margin = 6;
-      this.add(box);
+      gtkWidgetMargin(box, 6);
+      gtkSetChild(this, box);
 
       this._makeRemoveButton(box);
       this._makeRenameBox(box);
       this._makeSwapBox(box);
 
-      box.show_all();
+      gtkShowAll(box);
     }
 
     setCallback(callback) {
@@ -462,31 +531,31 @@ const EditPopover = GObject.registerClass(
     _makeSwapBox(parent) {
       const box = Gtk.Box.new(Gtk.Orientation.VERTICAL, 6);
       const label = Gtk.Label.new(_("Replace with"));
-      box.add(label);
+      gtkBoxAdd(box, label);
 
       const buttonBox = Gtk.Box.new(Gtk.Orientation.VERTICAL, 0);
       for (const key in Action) {
         const action = Action[key];
         if (action !== this.action) {
-          buttonBox.add(this._makeButton(action));
+          gtkBoxAdd(buttonBox, this._makeButton(action));
         }
       }
-      box.add(buttonBox);
+      gtkBoxAdd(box, buttonBox);
 
-      parent.add(box);
+      gtkBoxAdd(parent, box);
       return box;
     }
 
     _makeRenameBox(parent) {
       const box = Gtk.Box.new(Gtk.Orientation.VERTICAL, 6);
       const label = Gtk.Label.new(_("Menu item text"));
-      box.add(label);
+      gtkBoxAdd(box, label);
 
       const hbox = Gtk.Box.new(Gtk.Orientation.HORIZONTAL, 0);
-      box.add(hbox);
+      gtkBoxAdd(box, hbox);
 
       this._entry = Gtk.Entry.new();
-      hbox.pack_start(this._entry, true, true, 0);
+      gtkBoxPackStart(hbox, this._entry, true, true, 0);
 
       const apply = Gtk.Button.new_from_icon_name("gtk-apply", Gtk.IconSize.BUTTON);
       apply.connect("clicked", (_button) => {
@@ -495,7 +564,7 @@ const EditPopover = GObject.registerClass(
           this._callback(this.action, EditAction.RENAME, this._entry.get_text());
         }
       });
-      hbox.add(apply);
+      gtkBoxAdd(hbox, apply);
 
       this._entry.connect("activate", (_entry) => {
         apply.clicked();
@@ -508,18 +577,19 @@ const EditPopover = GObject.registerClass(
           this._callback(this.action, EditAction.RENAME, null);
         }
       });
-      hbox.add(reset);
+      gtkBoxAdd(hbox, reset);
 
-      parent.add(box);
+      gtkBoxAdd(parent, box);
       return box;
     }
 
     _makeRemoveButton(parent) {
       const button = Gtk.Button.new_with_label(_("Remove"));
       const icon = Gtk.Image.new_from_icon_name("gtk-delete", Gtk.IconSize.BUTTON);
-      button.set_image(icon);
-      button.always_show_image = true;
-      parent.add(button);
+      // FIXME: revert and gtk4
+      // button.set_image(icon);
+      // button.always_show_image = true;
+      gtkBoxAdd(parent, button);
 
       button.connect("clicked", (_button) => {
         this.popdown();
@@ -534,7 +604,10 @@ const EditPopover = GObject.registerClass(
     _makeButton(action) {
       const button = Gtk.Button.new();
       button.set_label(getDefaultText(action, _));
-      button.set_alignment(0.0, 0.5);
+      if (!IS_GTK4) {
+        // FIXME: style properly for GTK4
+        button.set_alignment(0.0, 0.5);
+      }
 
       button.connect("clicked", (_button) => {
         if (this._callback !== null) {
@@ -555,7 +628,7 @@ function init() {
 
 function buildPrefsWidget() {
   let widget = new SettingsWidget();
-  widget.show_all();
+  gtkShowAll(widget);
 
   return widget;
 }
