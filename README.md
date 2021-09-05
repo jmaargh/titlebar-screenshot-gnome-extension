@@ -15,8 +15,11 @@ The current options are:
 
 ## Supported gnome versions
 
-Currently only **gnome 3.38**, since that's the version I'm running right now.
-If there's interest, I'm open to testing and porting on other versions.
+Supports **gnome 3.38** and **gnome 40** (including Ubuntu 21.04, Fedora 34, and
+many other popular distributions).
+
+Unless there's interest, support for other versions is unlikely because
+[first-party for this feature is being worked on](https://thisweek.gnome.org/posts/2021/08/twig-7/#gnome-shell).
 
 ## Installation
 
