@@ -18,6 +18,17 @@ The current options are:
 Currently only **gnome 3.38**, since that's the version I'm running right now.
 If there's interest, I'm open to testing and porting on other versions.
 
+## Installation
+
+Install from the [gnome extensions website](https://extensions.gnome.org/extension/4458/titlebar-screenshot/).
+
+You can also install a release manually by downloading the zip of the release
+and running
+
+```
+$ gnome-extensions install --force titlebar-screenshot@jmaargh.github.com.<VERSION>.zip
+```
+
 ## Configuration
 
 This extension is designed to be as configurable as possible, allowing users to
