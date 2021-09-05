@@ -28,9 +28,7 @@
 
 'use strict';
 
-const ExtensionUtils = imports.misc.extensionUtils;
-const extension = ExtensionUtils.getCurrentExtension();
-const { Key } = extension.imports.vars;
+const { Key } = globalThis.Imports.vars;
 
 var Action = {
   COPY: 0,

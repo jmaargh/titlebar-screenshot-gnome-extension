@@ -31,14 +31,17 @@
 const { GLib, Gio } = imports.gi;
 const PopupMenu = imports.ui.popupMenu;
 const MessageTray = imports.ui.messageTray;
-const ExtensionUtils = imports.misc.extensionUtils;
 
+const ExtensionUtils = imports.misc.extensionUtils;
 const extension = ExtensionUtils.getCurrentExtension();
-const Gettext = imports.gettext.domain(extension.metadata.uuid);
+globalThis.Imports = extension.imports;
+globalThis.Uuid = extension.metadata.uuid;
+
+const Gettext = imports.gettext.domain(globalThis.Uuid);
 const _ = Gettext.gettext;
 
-const { iconName, errorIconName, Key } = extension.imports.vars;
-const { Action, getCurrentActions } = extension.imports.actions;
+const { iconName, errorIconName, Key } = Imports.vars;
+const { Action, getCurrentActions } = Imports.actions;
 
 class CustomWindowMenu extends imports.ui.windowMenu.WindowMenu {
     constructor(...args) {
@@ -260,7 +263,7 @@ function initSettings() {
 }
 
 function init() {
-    ExtensionUtils.initTranslations(extension.metadata.uuid);
+    ExtensionUtils.initTranslations(globalThis.Uuid);
 }
 
 function enable() {

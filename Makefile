@@ -8,7 +8,7 @@ builddir := build
 js_files := $(wildcard *.js)
 schema_files := $(wildcard schemas/*.xml)
 translation_files := $(js_files) $(schema_files)
-sources := LICENSE-MIT LICENSE-GPL2 $(js_files) $(schema_files)
+sources := LICENSE-MIT LICENSE-GPL2 preferences-standalone $(js_files) $(schema_files)
 
 output := $(builddir)/$(UUID).zip
 

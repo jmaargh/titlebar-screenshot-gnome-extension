@@ -1,4 +1,6 @@
-/* prefs.js
+#!/usr/bin/env gjs
+
+/* preferences-standalone
  *
  * Copyright © 2021 John-Mark Allen & Titlebar Screenshot collaborators
  *
@@ -26,51 +28,43 @@
  * your option.
  */
 
-'use strict';
+imports.gi.versions.Gtk = "3.0";
 
-const { Gtk, GLib, Gio } = imports.gi;
-const gtkVersion = Gtk.get_major_version();
+const { GLib, Gio, Gtk } = imports.gi;
+const System = imports.system;
 
-const ExtensionUtils = imports.misc.extensionUtils;
-const extension = ExtensionUtils.getCurrentExtension();
-globalThis.Imports = extension.imports;
-globalThis.Uuid = extension.metadata.uuid;
-
-function nativeWidget() {
-  const PrefsWidget = globalThis.Imports.prefs_widget.PrefsWidget
-
-  let widget = new PrefsWidget(ExtensionUtils.getSettings());
-  widget.show_all();
-
-  return widget;
+if (ARGV.length < 1) {
+  log("Error: Must provide extension UUID as an argument");
+  System.exit(1);
 }
 
-function standalonePrefs() {
-  // Destroy the window once the mainloop starts
-  const widget = new Gtk.Box();
+globalThis.Uuid = ARGV[0];
+globalThis.Imports = imports;
 
-  GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
-    widget.get_root().destroy();
-    return false;
+imports.searchPath.unshift(".");
+const PrefsWidget = imports.prefs_widget.PrefsWidget
+
+const SchemaId = "org.gnome.shell.extensions.titlebar-screenshot";
+
+let app = new Gtk.Application({ application_id: SchemaId });
+
+app.connect("activate", () => {
+  const gschema = Gio.SettingsSchemaSource.new_from_directory(
+    `${GLib.get_current_dir()}/schemas`,
+    Gio.SettingsSchemaSource.get_default(),
+    false,
+  );
+  const gsettings = new Gio.Settings({
+    settings_schema: gschema.lookup(SchemaId, true),
   });
 
-  const launcher = Gio.SubprocessLauncher.new(Gio.SubprocessLauncher.NONE);
-  launcher.set_cwd(extension.path);
-  launcher.spawnv([`${extension.path}/preferences-standalone`, globalThis.Uuid]);
+  let window = new Gtk.ApplicationWindow({
+    application: app,
+    title: "Titlebar Screenshot",
+  });
+  let prefs = new PrefsWidget(gsettings);
+  window.add(prefs);
+  window.show_all();
+});
 
-  return widget;
-}
-
-function init() {
-  if (Gtk.get_major_version() === 3) {
-    ExtensionUtils.initTranslations(globalThis.Uuid);
-  }
-}
-
-function buildPrefsWidget() {
-  if (Gtk.get_major_version() === 3) {
-    return nativeWidget();
-  } else {
-    return standalonePrefs();
-  }
-}
+app.run([]);
